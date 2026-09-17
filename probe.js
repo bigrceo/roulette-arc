@@ -14,12 +14,15 @@ const PORTALS = [
   ["#3", "0x7A17Ab0106C46C0be30623F3EB7F299CC0058338"],
 ];
 
-if (!TOKEN) { console.error("usage: TOKEN_ADDRESS=0x… node probe.js"); process.exit(1); }
+if (!TOKEN) {
+  console.error("usage: TOKEN_ADDRESS=0x… node probe.js");
+  process.exit(1);
+}
 
 const p = new ethers.JsonRpcProvider(RPC, 5042, { staticNetwork: true });
 const pad = (s, n) => String(s).padEnd(n);
-const net = await p.getNetwork();
 
+const net = await p.getNetwork();
 console.log(`
   ARGUS LAUNCH PROBE                         read-only, no key required
   ${"─".repeat(68)}
@@ -38,7 +41,11 @@ for (const [name, addr] of PORTALS) {
     if (r.creator !== ethers.ZeroAddress) { rec = r; portal = [name, addr]; break; }
   } catch {}
 }
-if (!rec) { console.log("  No portal recognises this token with the documented ABI.\n"); process.exit(1); }
+
+if (!rec) {
+  console.log("  No portal recognises this token with the documented ABI.\n");
+  process.exit(1);
+}
 
 console.log(`  LAUNCH RECORD                              portal ${portal[0]}
   ${"─".repeat(68)}
@@ -46,7 +53,7 @@ console.log(`  LAUNCH RECORD                              portal ${portal[0]}
   splitter   ${rec.splitter}
   hook       ${rec.hook}
   locker     ${rec.locker}
-  tax        ${Number(rec.buyTaxBps)/100}% buy  /  ${Number(rec.sellTaxBps)/100}% sell
+  tax        ${Number(rec.buyTaxBps) / 100}% buy  /  ${Number(rec.sellTaxBps) / 100}% sell
   quote      ${rec.quoteAsset === USDC ? "USDC" : rec.quoteAsset}
 
   launches(address) → ABI matches the public repo ✓
