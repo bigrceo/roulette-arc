@@ -51,9 +51,11 @@ const SPLITTER_ABI = [
   "function creator() view returns (address)",
 ];
 
-const provider = new ethers.JsonRpcProvider(RPC);
+const provider = new ethers.JsonRpcProvider(RPC, 5042, { staticNetwork: true });
+process.on("unhandledRejection", e => console.error("promesse non geree:", e?.message || e));
+process.on("uncaughtException", e => console.error("exception:", e?.message || e));
 const wallet = PK ? new ethers.Wallet(PK, provider) : null;
-const token = new ethers.Contract(TOKEN, ERC20_ABI, provider);
+const token = TOKEN ? new ethers.Contract(TOKEN, ERC20_ABI, provider) : null;
 const usdc = new ethers.Contract(USDC, ERC20_ABI, wallet || provider);
 
 let SPLITTER = null;
@@ -253,6 +255,10 @@ async function tick() {
 // SERVEUR WEB
 // ---------------------------------------------------------------------------
 function publicState() {
+  if (!TOKEN) return { prelaunch:true, potUsdc:0, thresholdUsdc:THRESHOLD,
+    potShare:POT_SHARE, devShare:100-POT_SHARE, eligibleCount:0, totalPaid:0,
+    pendingDraw:null, rounds:[], token:"", explorer:EXPLORER,
+    rules:{minHoldPct:MIN_HOLD_PCT*100, weighting:"sqrt", drawDelayBlocks:DRAW_DELAY} };
   const { list, total } = eligibleHolders(state.balances, EXCLUDED);
   return {
     token: TOKEN,
@@ -310,9 +316,14 @@ http
 // DEMARRAGE
 // ---------------------------------------------------------------------------
 async function main() {
-  const net = await provider.getNetwork();
-  console.log(`chainId ${net.chainId} (attendu 5042)`);
-  if (!TOKEN) throw new Error("TOKEN_ADDRESS manquant");
+  if (!TOKEN) {
+    console.log("Mode pre-lancement : le site tourne, le bot attend le token.");
+    return;
+  }
+  try {
+    const net = await provider.getNetwork();
+    console.log(`chainId ${net.chainId} ${Number(net.chainId)===5042?"(OK)":"!! attendu 5042"}`);
+  } catch (e) { console.error("RPC injoignable:", e.message); return; }
 
   const portal = new ethers.Contract(PORTAL, PORTAL_ABI, provider);
   const rec = await portal.launches(TOKEN);

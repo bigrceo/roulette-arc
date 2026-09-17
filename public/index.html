@@ -185,7 +185,7 @@
     <div class="felt">
       <div class="felt-label">Pot on the table</div>
       <div class="pot" id="pot">—</div>
-      <div class="pot-note">USDC, waiting for one address</div>
+      <div class="pot-note" id="pot-note">USDC, waiting for one address</div>
       <div class="track"><div id="bar"></div></div>
       <div class="track-legend"><span id="pct">—</span><span id="thr">—</span></div>
       <div class="spinning" id="spinning"></div>
@@ -274,6 +274,16 @@ async function load(){
   let s;
   try { s = await (await fetch('/api/state')).json(); } catch(e){ return; }
 
+  if (s.prelaunch){
+    $('pot').textContent='SOON'; $('pot').style.fontSize='clamp(40px,10vw,64px)';
+    $('pot-note').textContent='The wheel is not spinning yet';
+    $('bar').style.width='0%'; $('pct').textContent='not live';
+    $('thr').textContent='spins at '+money(s.thresholdUsdc);
+    $('paid').textContent='—'; $('rounds').textContent='—'; $('eligible').textContent='—';
+    $('ca').textContent='Published at launch';
+    $('s-pot').textContent=s.potShare; $('s-dev').textContent=s.devShare;
+    $('spinning').style.display='none'; return;
+  }
   $('pot').textContent = money(s.potUsdc);
   const pct = Math.min(100, (s.potUsdc / s.thresholdUsdc) * 100);
   $('bar').style.width = pct + '%';
