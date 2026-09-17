@@ -310,7 +310,7 @@ http
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     res.end(fs.readFileSync(file));
   })
-  .listen(PORT, () => console.log(`site: http://localhost:${PORT}`));
+  .listen(PORT, "0.0.0.0", () => console.log(`site en ecoute sur le port ${PORT}`));
 
 // ---------------------------------------------------------------------------
 // DEMARRAGE
