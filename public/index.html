@@ -3,158 +3,282 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>$JACKPOT — every pot goes to one holder</title>
-<meta name="description" content="Every trade feeds the pot. When it hits the threshold, one holder takes all of it. Drawn from a future block hash. Verifiable by anyone.">
+<title>$ROULETTE — the wheel pays one holder</title>
+<meta name="description" content="Every trade spins the wheel. When the pot fills, one holder takes all of it — drawn from a block hash that does not exist yet.">
+<meta property="og:title" content="$ROULETTE — the wheel pays one holder">
+<meta property="og:description" content="Every trade spins the wheel. One holder takes the whole pot.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://rouletteonarc.com/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="$ROULETTE — the wheel pays one holder">
+<meta name="twitter:description" content="Every trade spins the wheel. One holder takes the whole pot.">
+<meta name="twitter:image" content="https://rouletteonarc.com/og.png">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%230B0A09'/%3E%3Ccircle cx='50' cy='50' r='44' fill='none' stroke='%23B8912F' stroke-width='4'/%3E%3Cpath d='M50 50 L50 8 A42 42 0 0 1 86 29 Z' fill='%23B01E28'/%3E%3Cpath d='M50 50 L86 71 A42 42 0 0 1 14 71 Z' fill='%23B01E28'/%3E%3Cpath d='M50 50 L14 29 A42 42 0 0 1 50 8 Z' fill='%230F7A43'/%3E%3Ccircle cx='50' cy='50' r='16' fill='%23B8912F'/%3E%3Ccircle cx='50' cy='50' r='7' fill='%230B0A09'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,600;0,6..96,800;1,6..96,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0B0D12; --panel:#141824; --line:#232938;
-    --text:#F2F4F8; --dim:#8B94A8; --faint:#5A6376;
-    --accent:#8B5CF6; --accent-soft:#2A1F4D; --green:#34D399;
+    --ink:#0B0A09;
+    --ink-2:#14110F;
+    --ink-3:#1E1915;
+    --blood:#B01E28;
+    --blood-lo:#7A1219;
+    --au:#B8912F;
+    --au-lo:#7A5C1B;
+    --au-hi:#E8CC78;
+    --cream:#F0E6D2;
+    --cream-dim:#A99C86;
+    --cream-faint:#6B6153;
+    --display:"Bodoni Moda",Didot,"Times New Roman",serif;
+    --sans:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
-    -webkit-font-smoothing:antialiased;line-height:1.5}
-  a{color:var(--accent);text-decoration:none}
-  a:hover{text-decoration:underline}
-  .wrap{max-width:860px;margin:0 auto;padding:0 20px}
-  header{padding:28px 0;border-bottom:1px solid var(--line)}
-  .logo{font-weight:800;font-size:19px;letter-spacing:-.4px}
-  .logo span{color:var(--accent)}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--ink);color:var(--cream);
+    font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -8%, rgba(176,30,40,.13), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 50% 104%, rgba(184,145,47,.07), transparent 70%);
+    background-attachment:fixed;
+  }
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:9;opacity:.15;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  }
+  a{color:var(--au-hi);text-decoration:none;border-bottom:1px solid rgba(184,145,47,.35)}
+  a:hover{border-bottom-color:var(--au-hi)}
+  .wrap{max-width:900px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+  .rule{height:1px;background:linear-gradient(90deg,transparent,rgba(184,145,47,.4) 20%,rgba(184,145,47,.4) 80%,transparent)}
 
-  .hero{padding:56px 0 40px;text-align:center}
-  .kicker{font-size:12px;letter-spacing:2.4px;text-transform:uppercase;color:var(--faint);margin-bottom:20px}
-  h1{font-size:clamp(30px,6vw,52px);line-height:1.08;letter-spacing:-1.4px;margin:0 0 18px;font-weight:800}
-  .sub{color:var(--dim);font-size:17px;max-width:540px;margin:0 auto}
+  .topline{height:3px;background:linear-gradient(90deg,var(--blood-lo),var(--blood) 22%,var(--au) 50%,var(--blood) 78%,var(--blood-lo))}
+  header{padding:22px 0}
+  .brand{display:flex;align-items:center;gap:14px}
+  .brand svg{width:42px;height:42px;flex:0 0 42px}
+  .brand-name{font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:.22em;line-height:1}
+  .brand-sub{font-family:var(--mono);font-size:10px;letter-spacing:.24em;color:var(--cream-faint);text-transform:uppercase;margin-top:6px}
 
-  .pot{margin:44px auto 0;max-width:520px;background:var(--panel);
-    border:1px solid var(--line);border-radius:18px;padding:34px 28px}
-  .pot-label{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--faint)}
-  .pot-amount{font-size:clamp(46px,12vw,76px);font-weight:800;letter-spacing:-2.5px;
-    margin:10px 0 4px;font-variant-numeric:tabular-nums}
-  .pot-sub{color:var(--dim);font-size:14px}
-  .bar{height:8px;background:#0A0C11;border-radius:99px;margin:24px 0 10px;overflow:hidden}
-  .bar>div{height:100%;background:linear-gradient(90deg,#6D46C4,#A78BFA);
-    border-radius:99px;transition:width .6s ease;width:0%}
-  .bar-legend{display:flex;justify-content:space-between;font-size:12px;color:var(--faint)}
+  .hero{padding:62px 0 18px;text-align:center}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--au);margin-bottom:26px}
+  .eyebrow span{color:var(--cream-faint)}
+  h1{font-family:var(--display);font-weight:400;font-size:clamp(38px,7.2vw,72px);line-height:1.04;
+     letter-spacing:-.015em;margin:0 0 20px}
+  h1 em{font-style:italic;color:var(--blood);font-weight:600}
+  .lede{color:var(--cream-dim);font-size:17px;max-width:520px;margin:0 auto}
 
-  .drawing{margin-top:22px;padding:16px;border-radius:12px;
-    background:var(--accent-soft);border:1px solid #3C2E6B;font-size:14px;display:none}
-  .drawing b{color:#C4B5FD}
+  .felt{
+    margin:46px auto 0;max-width:560px;padding:34px 30px 28px;
+    background:linear-gradient(180deg, rgba(12,43,30,.5), rgba(12,43,30,.16)), var(--ink-2);
+    border:1px solid var(--ink-3);
+    box-shadow:0 0 0 1px rgba(184,145,47,.22), 0 30px 70px -30px rgba(0,0,0,.9);
+  }
+  .felt-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--au)}
+  .pot{font-family:var(--mono);font-weight:500;font-size:clamp(46px,13vw,80px);
+       letter-spacing:-.035em;margin:12px 0 2px;color:var(--cream);font-variant-numeric:tabular-nums}
+  .pot-note{color:var(--cream-dim);font-size:13.5px}
+  .track{height:6px;background:#0A0908;border:1px solid rgba(184,145,47,.2);margin:26px 0 10px;overflow:hidden}
+  .track>div{height:100%;width:0%;transition:width .7s cubic-bezier(.2,.8,.3,1);
+    background:linear-gradient(90deg,var(--blood-lo),var(--blood) 60%,var(--au-hi))}
+  .track-legend{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;
+    letter-spacing:.08em;color:var(--cream-faint)}
+  .spinning{margin-top:22px;padding:14px 16px;border-left:2px solid var(--blood);
+    background:rgba(176,30,40,.09);font-size:14px;color:var(--cream-dim);display:none}
+  .spinning b{color:var(--cream);font-family:var(--mono);font-weight:500}
 
-  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:40px 0}
-  .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
-  .stat-v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
-  .stat-l{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--faint);margin-top:5px}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);margin:46px 0 0;
+    border-top:1px solid var(--ink-3);border-bottom:1px solid var(--ink-3)}
+  .stat{padding:22px 18px;text-align:center;border-right:1px solid var(--ink-3)}
+  .stat:last-child{border-right:0}
+  .stat-v{font-family:var(--mono);font-size:21px;font-weight:500;font-variant-numeric:tabular-nums}
+  .stat-l{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--cream-faint);margin-top:7px}
 
-  section{padding:40px 0;border-top:1px solid var(--line)}
-  h2{font-size:12px;letter-spacing:2.4px;text-transform:uppercase;color:var(--faint);
-    margin:0 0 22px;font-weight:600}
+  section{padding:54px 0}
+  h2{font-family:var(--mono);font-size:11px;letter-spacing:.3em;text-transform:uppercase;
+     color:var(--au);margin:0 0 30px;font-weight:500}
+  .steps{display:grid;gap:22px}
+  .step{display:grid;grid-template-columns:52px 1fr;gap:6px;align-items:start}
+  .step-n{font-family:var(--display);font-size:34px;font-weight:400;color:var(--au-lo);line-height:1}
+  .step h3{font-family:var(--sans);font-size:16px;font-weight:600;margin:0 0 4px;color:var(--cream)}
+  .step p{margin:0;color:var(--cream-dim);font-size:14.5px}
+  .prose{font-size:15.5px;max-width:640px}
+  .prose p{margin:0 0 14px}
+  .prose .muted{color:var(--cream-dim)}
 
-  .steps{display:grid;gap:14px}
-  .step{display:flex;gap:16px;align-items:flex-start}
-  .num{flex:0 0 28px;height:28px;border-radius:8px;background:var(--accent-soft);
-    color:#C4B5FD;display:flex;align-items:center;justify-content:center;
-    font-size:12px;font-weight:700;margin-top:2px}
-  .step p{margin:0;font-size:15px}
-  .step p small{display:block;color:var(--dim);font-size:13.5px;margin-top:3px}
+  table{width:100%;border-collapse:collapse}
+  th{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+     color:var(--cream-faint);text-align:left;font-weight:500;padding:0 12px 12px 0;
+     border-bottom:1px solid rgba(184,145,47,.3)}
+  td{padding:15px 12px 15px 0;border-bottom:1px solid var(--ink-3);font-size:14px;
+     font-family:var(--mono);font-variant-numeric:tabular-nums}
+  td.num{font-family:var(--display);font-size:19px;color:var(--au-lo);width:42px}
+  .amount{color:var(--au-hi);font-weight:600}
+  .failed{color:var(--blood)}
+  .empty{color:var(--cream-faint);font-size:14.5px;padding:8px 0 4px}
 
-  table{width:100%;border-collapse:collapse;font-size:14px}
-  th{text-align:left;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;
-    color:var(--faint);font-weight:600;padding:0 10px 10px 0;border-bottom:1px solid var(--line)}
-  td{padding:14px 10px 14px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
-  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
-  .win{color:var(--green);font-weight:700}
-  .empty{color:var(--faint);padding:26px 0;font-size:14.5px}
+  .ca{border:1px solid var(--ink-3);padding:24px;background:var(--ink-2)}
+  .ca-lead{font-size:13.5px;color:var(--cream-dim)}
+  .ca-addr{font-family:var(--mono);font-size:13px;word-break:break-all;color:var(--au-hi);
+    background:#0A0908;border:1px solid rgba(184,145,47,.2);padding:14px;margin:12px 0}
+  .ca-warn{font-size:12.5px;color:var(--cream-faint)}
 
-  .ca{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px}
-  .ca-addr{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;
-    word-break:break-all;background:#0A0C11;padding:13px;border-radius:9px;margin:12px 0}
-  .warn{font-size:13px;color:var(--dim)}
-
-  footer{padding:38px 0;border-top:1px solid var(--line);color:var(--faint);font-size:13px}
-  @media(max-width:560px){.stats{grid-template-columns:1fr}}
+  .brand{position:relative}
+  nav{margin-left:auto;font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase}
+  nav a{border-bottom:none;color:var(--cream-dim)}
+  nav a:hover{color:var(--au-hi)}
+  .sep{color:var(--cream-faint);margin:0 10px}
+  .buy{display:none;width:100%;margin-top:22px;padding:15px;text-align:center;
+    font-family:var(--mono);font-size:12.5px;letter-spacing:.2em;text-transform:uppercase;
+    color:#0B0A09;background:linear-gradient(180deg,var(--au-hi),var(--au));
+    border:none;border-bottom:none;font-weight:600}
+  .buy:hover{background:var(--au-hi);border-bottom:none}
+  .foot-links{margin-top:16px}
+  .loading{color:var(--cream-faint)}
+  footer{padding:40px 0 56px;color:var(--cream-faint);font-size:12.5px;text-align:center}
+  @media(max-width:560px){
+    .stats{grid-template-columns:1fr}
+    .stat{border-right:0;border-bottom:1px solid var(--ink-3)}
+    th:nth-child(4),td:nth-child(4){display:none}
+  }
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="logo">$<span>JACKPOT</span></div></div></header>
+<div class="topline"></div>
 
 <div class="wrap">
-  <div class="hero">
-    <div class="kicker">On Arc · paid in USDC</div>
-    <h1>Every pot goes to<br>one single holder.</h1>
-    <p class="sub">Every trade feeds the pot. When it fills up, one holder takes all of it — drawn from a block hash that does not exist yet.</p>
+  <header>
+    <div class="brand">
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="47" fill="none" stroke="#B8912F" stroke-width="2.5"/>
+        <circle cx="50" cy="50" r="41" fill="#14110F"/>
+        <path d="M50 50 L50 9 A41 41 0 0 1 82 25 Z" fill="#B01E28"/>
+        <path d="M50 50 L82 25 A41 41 0 0 1 86 57 Z" fill="#1A1613"/>
+        <path d="M50 50 L86 57 A41 41 0 0 1 64 87 Z" fill="#B01E28"/>
+        <path d="M50 50 L64 87 A41 41 0 0 1 30 84 Z" fill="#1A1613"/>
+        <path d="M50 50 L30 84 A41 41 0 0 1 12 60 Z" fill="#B01E28"/>
+        <path d="M50 50 L12 60 A41 41 0 0 1 22 22 Z" fill="#1A1613"/>
+        <path d="M50 50 L22 22 A41 41 0 0 1 50 9 Z" fill="#0F7A43"/>
+        <circle cx="50" cy="50" r="26" fill="#14110F" stroke="#B8912F" stroke-width="2"/>
+        <g stroke="#B8912F" stroke-width="2.4" stroke-linecap="round">
+          <line x1="57" y1="43" x2="68" y2="32"/><line x1="43" y1="43" x2="32" y2="32"/>
+          <line x1="57" y1="57" x2="68" y2="68"/><line x1="43" y1="57" x2="32" y2="68"/>
+        </g>
+        <circle cx="50" cy="50" r="8" fill="#B8912F"/>
+        <circle cx="50" cy="50" r="3.4" fill="#14110F"/>
+        <circle cx="67" cy="21" r="5.4" fill="#F0E6D2"/>
+      </svg>
+      <div>
+        <div class="brand-name">ROULETTE</div>
+        <div class="brand-sub">On Arc · settled in USDC</div>
+      </div>
+      <nav id="nav-links"></nav>
+    </div>
+  </header>
 
-    <div class="pot">
-      <div class="pot-label">Current pot</div>
-      <div class="pot-amount" id="pot">—</div>
-      <div class="pot-sub">USDC, waiting for one holder</div>
-      <div class="bar"><div id="bar"></div></div>
-      <div class="bar-legend"><span id="pct">—</span><span id="thr">—</span></div>
-      <div class="drawing" id="drawing"></div>
+  <div class="hero">
+    <div class="eyebrow">No stake <span>·</span> No claim <span>·</span> One winner</div>
+    <h1>The wheel pays<br><em>one holder.</em></h1>
+    <p class="lede">Every trade feeds the pot. When it fills, the whole thing goes to a single holder — picked by a block hash that has not been mined yet.</p>
+
+    <div class="felt">
+      <div class="felt-label">Pot on the table</div>
+      <div class="pot" id="pot">—</div>
+      <div class="pot-note">USDC, waiting for one address</div>
+      <div class="track"><div id="bar"></div></div>
+      <div class="track-legend"><span id="pct">—</span><span id="thr">—</span></div>
+      <div class="spinning" id="spinning"></div>
+      <a class="buy" id="buy" href="#" target="_blank" rel="noopener">Buy $ROULETTE on Argus</a>
     </div>
   </div>
 
   <div class="stats">
-    <div class="stat"><div class="stat-v" id="paid">—</div><div class="stat-l">Total paid out</div></div>
-    <div class="stat"><div class="stat-v" id="rounds">—</div><div class="stat-l">Rounds drawn</div></div>
-    <div class="stat"><div class="stat-v" id="eligible">—</div><div class="stat-l">Eligible holders</div></div>
+    <div class="stat"><div class="stat-v" id="paid">—</div><div class="stat-l">Paid out</div></div>
+    <div class="stat"><div class="stat-v" id="rounds">—</div><div class="stat-l">Spins</div></div>
+    <div class="stat"><div class="stat-v" id="eligible">—</div><div class="stat-l">In the game</div></div>
   </div>
 
   <section>
-    <h2>How it works</h2>
+    <h2>The house rules</h2>
     <div class="steps">
-      <div class="step"><div class="num">1</div><p>Every buy and sell pays a 5% tax.
-        <small>It lands in the launch's revenue contract on Argus, in USDC.</small></p></div>
-      <div class="step"><div class="num">2</div><p><span id="s-pot">70</span>% of it goes into the pot.
-        <small>The remaining <span id="s-dev">30</span>% funds the project. It is stated here rather than hidden.</small></p></div>
-      <div class="step"><div class="num">3</div><p>At the threshold, a draw block is announced.
-        <small>A block that has not been mined yet. Nobody can predict its hash — including us.</small></p></div>
-      <div class="step"><div class="num">4</div><p>One holder takes the entire pot.
-        <small>Odds scale with the square root of your balance. Holding more helps, but doubling your bag multiplies your odds by 1.41 — not by 2. Whales cannot own every draw.</small></p></div>
+      <div class="step"><div class="step-n">I</div><div>
+        <h3>Every buy and sell pays 5%</h3>
+        <p>It lands in the launch's revenue contract on Argus, denominated in USDC.</p></div></div>
+      <div class="step"><div class="step-n">II</div><div>
+        <h3><span id="s-pot">70</span>% goes on the table</h3>
+        <p>The other <span id="s-dev">30</span>% funds the project. Written here rather than buried — you should know who takes what before you buy.</p></div></div>
+      <div class="step"><div class="step-n">III</div><div>
+        <h3>At the line, the wheel locks</h3>
+        <p>A draw block is announced. It has not been mined yet, so its hash cannot be predicted — not by you, not by us.</p></div></div>
+      <div class="step"><div class="step-n">IV</div><div>
+        <h3>One address takes the pot</h3>
+        <p>Odds follow the square root of your balance. Holding more helps; doubling your bag multiplies your odds by 1.41, not by 2. No single whale owns the wheel.</p></div></div>
     </div>
   </section>
 
-  <section>
-    <h2>Why you can check it yourself</h2>
-    <p style="font-size:15px;margin:0 0 14px">The winner comes from two public inputs: token balances frozen at the draw block, and the hash of that same block. Both are on-chain. Neither can be altered after the block is announced.</p>
-    <p style="font-size:15px;margin:0;color:var(--dim)">Every round below lists its draw block, the resulting hash and the payout transaction. Run the open-source verification script against any of them and you should land on the same winner.</p>
-  </section>
+  <div class="rule"></div>
 
   <section>
-    <h2>Past rounds</h2>
-    <div id="rounds-box"><div class="empty">No round drawn yet.</div></div>
+    <h2>Why you don't have to trust us</h2>
+    <div class="prose">
+      <p>The winner falls out of two public inputs: token balances frozen at the draw block, and the hash of that same block. Both live on Arc. Neither can be touched once the block is announced.</p>
+      <p class="muted">Every spin below shows its draw block, the hash it produced and the payout transaction. The verification script is open source and runs the exact same code as the bot — point it at any round and you should land on the same address.<span id="verify-link"></span></p>
+    </div>
   </section>
+
+  <div class="rule"></div>
+
+  <section>
+    <h2>Past spins</h2>
+    <div id="rounds-box"><div class="empty">The wheel has not turned yet.</div></div>
+  </section>
+
+  <div class="rule"></div>
 
   <section>
     <h2>Contract</h2>
     <div class="ca">
-      <div class="warn">The only official contract address:</div>
+      <div class="ca-lead">The one official address:</div>
       <div class="ca-addr" id="ca">—</div>
-      <div class="warn">Check every character before buying. Fake copies of new tokens circulate on Arc.</div>
+      <div class="ca-warn">Read every character before you buy. Copies of new tokens circulate on Arc within minutes of a launch.</div>
     </div>
   </section>
 
   <footer>
-    Memecoins are highly speculative. Nothing here is financial advice. Only risk what you can afford to lose.
+    Memecoins are highly speculative and volatile. Nothing here is financial advice.<br>
+    Never put in more than you can afford to lose.
+    <div id="foot-links" class="foot-links"></div>
   </footer>
 </div>
 
 <script>
+// ===========================================================================
+//  A REMPLIR — mets tes vraies URLs ici, c'est le seul endroit a modifier.
+//  Laisse "" pour masquer un lien tant qu'il n'existe pas.
+// ===========================================================================
+const LINKS = {
+  x:        "https://x.com/RouletteOnArc",
+  telegram: "",
+  github:   "https://github.com/bigrceo/roulette-arc",
+  buy:      ""   // page Argus du token, dispo apres le lancement
+};
+const SITE_URL = "https://rouletteonarc.com";
+// ===========================================================================
+
 const $ = id => document.getElementById(id);
 const short = a => a ? a.slice(0,6)+'…'+a.slice(-4) : '—';
 const money = n => '$' + Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 
 async function load(){
   let s;
-  try { s = await (await fetch('/api/state')).json(); }
-  catch(e){ return; }
+  try { s = await (await fetch('/api/state')).json(); } catch(e){ return; }
 
   $('pot').textContent = money(s.potUsdc);
   const pct = Math.min(100, (s.potUsdc / s.thresholdUsdc) * 100);
   $('bar').style.width = pct + '%';
-  $('pct').textContent = pct.toFixed(0) + '% full';
-  $('thr').textContent = 'draws at ' + money(s.thresholdUsdc);
+  $('pct').textContent = pct.toFixed(0) + '% to the line';
+  $('thr').textContent = 'spins at ' + money(s.thresholdUsdc);
   $('paid').textContent = money(s.totalPaid);
   $('rounds').textContent = s.rounds.length;
   $('eligible').textContent = s.eligibleCount;
@@ -162,28 +286,42 @@ async function load(){
   $('s-pot').textContent = s.potShare;
   $('s-dev').textContent = s.devShare;
 
-  const d = $('drawing');
+  const d = $('spinning');
   if (s.pendingDraw){
     d.style.display = 'block';
-    d.innerHTML = 'Round <b>#' + s.pendingDraw.round + '</b> is locked. The winner will be drawn from block <b>'
-      + s.pendingDraw.targetBlock + '</b>, which has not been mined yet.';
+    d.innerHTML = 'Spin <b>#' + s.pendingDraw.round + '</b> is locked. The winner comes from block <b>'
+      + s.pendingDraw.targetBlock + '</b> — not mined yet.';
   } else d.style.display = 'none';
 
   if (s.rounds.length){
     $('rounds-box').innerHTML =
-      '<table><thead><tr><th>#</th><th>Winner</th><th>Amount</th><th>Draw block</th><th>Tx</th></tr></thead><tbody>'
+      '<table><thead><tr><th>#</th><th>Winner</th><th>Pot</th><th>Draw block</th><th>Payout</th></tr></thead><tbody>'
       + s.rounds.map(r => '<tr>'
-        + '<td>' + r.round + '</td>'
-        + '<td class="mono"><a href="' + s.explorer + '/address/' + r.winner + '">' + short(r.winner) + '</a></td>'
-        + '<td class="win">' + money(r.amountUsdc) + '</td>'
-        + '<td class="mono">' + r.targetBlock + '</td>'
-        + '<td class="mono">' + (r.txHash
+        + '<td class="num">' + r.round + '</td>'
+        + '<td><a href="' + s.explorer + '/address/' + r.winner + '">' + short(r.winner) + '</a></td>'
+        + '<td class="amount">' + money(r.amountUsdc) + '</td>'
+        + '<td>' + r.targetBlock + '</td>'
+        + '<td>' + (r.txHash
             ? '<a href="' + s.explorer + '/tx/' + r.txHash + '">' + short(r.txHash) + '</a>'
-            : '<span style="color:#F87171">failed</span>') + '</td>'
+            : '<span class="failed">failed</span>') + '</td>'
         + '</tr>').join('')
       + '</tbody></table>';
   }
 }
+function renderLinks(){
+  const mk = (url, label) => url ? '<a href="'+url+'" target="_blank" rel="noopener">'+label+'</a>' : '';
+  const nav = [mk(LINKS.x,'X'), mk(LINKS.telegram,'Telegram'), mk(LINKS.github,'GitHub')].filter(Boolean);
+  $('nav-links').innerHTML = nav.join('<span class="sep">·</span>');
+  if (LINKS.buy){
+    $('buy').href = LINKS.buy;
+    $('buy').style.display = 'inline-block';
+  }
+  if (LINKS.github){
+    $('verify-link').innerHTML = ' <a href="'+LINKS.github+'" target="_blank" rel="noopener">Read the code &rarr;</a>';
+  }
+  $('foot-links').innerHTML = nav.join('<span class="sep">·</span>');
+}
+renderLinks();
 load();
 setInterval(load, 10000);
 </script>

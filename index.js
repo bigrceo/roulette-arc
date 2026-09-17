@@ -42,9 +42,10 @@ const ERC20_ABI = [
 const PORTAL_ABI = [
   "function launches(address token) view returns (address creator, int24 tickStart, bool tokenIsToken0, address locker, address hook, address splitter, uint16 buyTaxBps, uint16 sellTaxBps, uint256 positionId, int24 tickBond, address quoteAsset)",
 ];
-// claim() prend UNIQUEMENT le destinataire (confirme en sondant le Portal #7).
-// Aucun getter fiable pour le montant en attente, donc on le mesure par la
-// variation du solde USDC du wallet.
+// Signature confirmée en sondant le Portal #7 réel : claim prend UNIQUEMENT
+// le destinataire. Il n'existe pas de getter fiable pour le montant en
+// attente (les noms du repo public ne correspondent pas au contrat déployé),
+// donc on mesure le montant claimé par la variation du solde USDC.
 const SPLITTER_ABI = [
   "function claim(address to) external",
   "function creator() view returns (address)",
@@ -118,12 +119,15 @@ async function claimFunds() {
   if (!wallet || !SPLITTER) return;
   const splitter = new ethers.Contract(SPLITTER, SPLITTER_ABI, wallet);
 
+  // 1. Y a-t-il quelque chose à claim ? On simule sans rien envoyer.
+  //    Un revert ici = pot vide côté Argus, cas normal et fréquent.
   try {
     await splitter.claim.staticCall(wallet.address);
   } catch {
     return;
   }
 
+  // 2. Solde avant, pour mesurer ce qui arrive réellement.
   let before;
   try {
     before = await usdc.balanceOf(wallet.address);
@@ -143,7 +147,7 @@ async function claimFunds() {
   const after = await usdc.balanceOf(wallet.address);
   const claimed = after - before;
   if (claimed <= 0n) {
-    console.log("claim passe mais solde inchange");
+    console.log("claim passé mais solde inchangé — rien à répartir");
     return;
   }
 
@@ -279,6 +283,22 @@ http
         "Access-Control-Allow-Origin": "*",
       });
       return res.end(JSON.stringify(publicState()));
+    }
+    // fichiers statiques du dossier public (og.png, etc.)
+    const clean = (req.url || "/").split("?")[0];
+    if (clean !== "/" && !clean.includes("..")) {
+      const asset = path.join(__dirname, "public", clean);
+      if (fs.existsSync(asset) && fs.statSync(asset).isFile()) {
+        const types = { ".png": "image/png", ".svg": "image/svg+xml",
+                        ".jpg": "image/jpeg", ".ico": "image/x-icon",
+                        ".css": "text/css", ".js": "text/javascript" };
+        const ext = path.extname(asset).toLowerCase();
+        res.writeHead(200, {
+          "Content-Type": types[ext] || "application/octet-stream",
+          "Cache-Control": "public, max-age=3600",
+        });
+        return res.end(fs.readFileSync(asset));
+      }
     }
     const file = path.join(__dirname, "public", "index.html");
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
