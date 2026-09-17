@@ -1,6 +1,5 @@
-// Sonde l'ABI réelle d'Argus contre un token déjà lancé, en LECTURE SEULE.
-// Aucune transaction, aucune clé privée requise.
-//   TOKEN_ADDRESS=0xTonToken node probe.js
+// Inspect any Argus launch on Arc. Read-only — no private key, no transaction.
+//   TOKEN_ADDRESS=0x… node probe.js
 import { ethers } from "ethers";
 
 const RPC = process.env.ARC_RPC_URL || "https://rpc.mainnet.arc.io";
@@ -16,75 +15,91 @@ const PORTALS = [
 ];
 
 if (!TOKEN) { console.error("usage: TOKEN_ADDRESS=0x… node probe.js"); process.exit(1); }
-const p = new ethers.JsonRpcProvider(RPC);
 
+const p = new ethers.JsonRpcProvider(RPC, 5042, { staticNetwork: true });
+const pad = (s, n) => String(s).padEnd(n);
 const net = await p.getNetwork();
-console.log(`RPC      ${RPC}`);
-console.log(`chainId  ${net.chainId} ${Number(net.chainId) === 5042 ? "OK" : "!! attendu 5042"}`);
-console.log(`bloc     ${await p.getBlockNumber()}`);
-console.log(`token    ${TOKEN}\n`);
 
-// 1. Quel Portal connaît ce token ?
+console.log(`
+  ARGUS LAUNCH PROBE                         read-only, no key required
+  ${"─".repeat(68)}
+  rpc        ${RPC}
+  chain id   ${net.chainId} ${Number(net.chainId) === 5042 ? "✓" : "✗ expected 5042"}
+  block      ${await p.getBlockNumber()}
+  token      ${TOKEN}
+`);
+
 const LAUNCH_ABI = ["function launches(address) view returns (address creator, int24 tickStart, bool tokenIsToken0, address locker, address hook, address splitter, uint16 buyTaxBps, uint16 sellTaxBps, uint256 positionId, int24 tickBond, address quoteAsset)"];
-let rec = null, portalUsed = null;
+
+let rec = null, portal = null;
 for (const [name, addr] of PORTALS) {
   try {
     const r = await new ethers.Contract(addr, LAUNCH_ABI, p).launches(TOKEN);
-    if (r.creator !== ethers.ZeroAddress) { rec = r; portalUsed = [name, addr]; break; }
-  } catch { /* ABI incompatible avec ce Portal, on continue */ }
+    if (r.creator !== ethers.ZeroAddress) { rec = r; portal = [name, addr]; break; }
+  } catch {}
 }
+if (!rec) { console.log("  No portal recognises this token with the documented ABI.\n"); process.exit(1); }
 
-if (!rec) {
-  console.log("Aucun Portal ne reconnaît ce token avec l'ABI testée.");
-  console.log("=> soit le token n'est pas d'Argus, soit la signature de launches() diffère.");
-  process.exit(1);
-}
+console.log(`  LAUNCH RECORD                              portal ${portal[0]}
+  ${"─".repeat(68)}
+  creator    ${rec.creator}
+  splitter   ${rec.splitter}
+  hook       ${rec.hook}
+  locker     ${rec.locker}
+  tax        ${Number(rec.buyTaxBps)/100}% buy  /  ${Number(rec.sellTaxBps)/100}% sell
+  quote      ${rec.quoteAsset === USDC ? "USDC" : rec.quoteAsset}
 
-console.log(`Portal      ${portalUsed[0]}  ${portalUsed[1]}`);
-console.log(`  creator   ${rec.creator}`);
-console.log(`  splitter  ${rec.splitter}`);
-console.log(`  hook      ${rec.hook}`);
-console.log(`  locker    ${rec.locker}`);
-console.log(`  taxes     ${Number(rec.buyTaxBps)/100}% buy / ${Number(rec.sellTaxBps)/100}% sell`);
-console.log(`  quote     ${rec.quoteAsset}`);
-console.log(`  -> launches() : ABI CONFIRMEE\n`);
+  launches(address) → ABI matches the public repo ✓
+`);
 
-// 2. Le splitter expose-t-il bien ce qu'on attend ?
 const tests = [
-  ["creditedToCreator(address)", ["function creditedToCreator(address) view returns (uint256)"], "creditedToCreator", [USDC]],
-  ["creatorFundsBps()",  ["function creatorFundsBps() view returns (uint16)"],  "creatorFundsBps",  []],
-  ["buybackBurnBps()",   ["function buybackBurnBps() view returns (uint16)"],   "buybackBurnBps",   []],
-  ["dividendsBps()",     ["function dividendsBps() view returns (uint16)"],     "dividendsBps",     []],
-  ["liquidityBps()",     ["function liquidityBps() view returns (uint16)"],     "liquidityBps",     []],
-  ["creator()",          ["function creator() view returns (address)"],         "creator",          []],
+  ["creditedToCreator(address)", "function creditedToCreator(address) view returns (uint256)", "creditedToCreator", [USDC]],
+  ["creatorFundsBps()", "function creatorFundsBps() view returns (uint16)", "creatorFundsBps", []],
+  ["buybackBurnBps()", "function buybackBurnBps() view returns (uint16)", "buybackBurnBps", []],
+  ["dividendsBps()", "function dividendsBps() view returns (uint16)", "dividendsBps", []],
+  ["liquidityBps()", "function liquidityBps() view returns (uint16)", "liquidityBps", []],
+  ["creator()", "function creator() view returns (address)", "creator", []],
 ];
-console.log(`Splitter ${rec.splitter}`);
+
+console.log(`  REVENUE SPLITTER                           which getters actually exist
+  ${"─".repeat(68)}`);
 for (const [label, abi, fn, args] of tests) {
   try {
-    const v = await new ethers.Contract(rec.splitter, abi, p)[fn](...args);
-    console.log(`  OK  ${label.padEnd(26)} = ${v}`);
-  } catch (e) {
-    console.log(`  KO  ${label.padEnd(26)} ${String(e.shortMessage || e.message).slice(0, 70)}`);
+    const v = await new ethers.Contract(rec.splitter, [abi], p)[fn](...args);
+    console.log(`  ✓  ${pad(label, 28)} ${v}`);
+  } catch {
+    console.log(`  ✗  ${pad(label, 28)} not present under this name`);
   }
 }
 
-// 3. claim() : qui peut l'appeler, et avec quelle signature ?
-console.log(`\nclaim() — test de signature (simulation, aucune tx envoyée)`);
+console.log(`
+  CLAIM SIGNATURE                            simulated, nothing is sent
+  ${"─".repeat(68)}`);
 const variants = [
   ["claim(address,address)", "function claim(address to, address quoteAsset)", [rec.creator, USDC]],
-  ["claim(address)",         "function claim(address to)",                     [rec.creator]],
-  ["claim()",                "function claim()",                               []],
+  ["claim(address)", "function claim(address to)", [rec.creator]],
+  ["claim()", "function claim()", []],
 ];
 for (const [label, sig, args] of variants) {
   const c = new ethers.Contract(rec.splitter, [sig], p);
   const fn = label.split("(")[0];
-  // depuis le creator
-  let asCreator = "—", asAnyone = "—";
-  try { await c[fn].staticCall(...args, { from: rec.creator }); asCreator = "passe"; }
-  catch (e) { asCreator = String(e.shortMessage || e.message).slice(0, 46); }
-  try { await c[fn].staticCall(...args, { from: "0x000000000000000000000000000000000000dEaD" }); asAnyone = "passe"; }
-  catch (e) { asAnyone = String(e.shortMessage || e.message).slice(0, 46); }
-  console.log(`  ${label}`);
-  console.log(`     depuis le creator : ${asCreator}`);
-  console.log(`     depuis un tiers   : ${asAnyone}`);
+  let verdict;
+  try {
+    await c[fn].staticCall(...args, { from: rec.creator });
+    verdict = "✓  exists, callable";
+  } catch (e) {
+    const m = String(e.shortMessage || e.message);
+    verdict = m.includes("missing revert data")
+      ? "✗  no such function"
+      : "✓  exists (reverted — nothing to claim or not authorised)";
+  }
+  console.log(`  ${pad(label, 28)} ${verdict}`);
 }
+
+console.log(`
+  ${"─".repeat(68)}
+  The deployed portal does not match the public repo one-for-one.
+  Probe before you trust the docs.
+
+  github.com/bigrceo/roulette-arc
+`);
