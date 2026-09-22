@@ -1,8 +1,14 @@
 {
-  "name": "jackpot-arc",
+  "name": "roulette",
   "version": "1.0.0",
   "type": "module",
   "main": "index.js",
-  "scripts": { "start": "node index.js", "verify": "node verify.js", "test": "node test.mjs" },
+  "scripts": {
+    "start": "node index.js",
+    "probe": "node probe.js",
+    "verify": "node verify.js",
+    "test": "node test.mjs",
+    "mock": "node mocknode.mjs"
+  },
   "dependencies": { "ethers": "^6.13.4" }
 }

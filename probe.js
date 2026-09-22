@@ -1,112 +1,338 @@
-// Inspect any Argus launch on Arc. Read-only — no private key, no transaction.
-//   TOKEN_ADDRESS=0x… node probe.js
+// ===========================================================================
+//  Sonde un token Pons sur Robinhood Chain. LECTURE SEULE : aucune
+//  transaction, aucune cle privee.
+//
+//    TOKEN_ADDRESS=0x… npm run probe
+//
+//  Sortie : le reseau, le temps de bloc reel, les contrats lies au token,
+//  les holders a exclure, et la signature de retrait des fees qui existe
+//  reellement. Le bloc de config a recopier dans chain.js est imprime a la fin.
+//
+//  Methode : on ne fait pas confiance a la doc. On appelle chaque fonction
+//  candidate en staticCall et on regarde laquelle repond. Une fonction
+//  absente renvoie "missing revert data". Une fonction presente qui refuse
+//  renvoie une vraie erreur d'execution. C'est la difference qui nous
+//  interesse.
+// ===========================================================================
+
 import { ethers } from "ethers";
+import {
+  CHAIN,
+  PONS,
+  ERC20_ABI,
+  CLAIM_CANDIDATES,
+  PENDING_CANDIDATES,
+  CREATOR_CANDIDATES,
+  discoverLaunch,
+} from "./chain.js";
 
-const RPC = process.env.ARC_RPC_URL || "https://rpc.mainnet.arc.io";
-const TOKEN = process.env.TOKEN_ADDRESS;
-const USDC = "0x3600000000000000000000000000000000000000";
-
-const PORTALS = [
-  ["#7", "0xB021Be536808f551b31789422Fd28a6c9c6e97Da"],
-  ["#6", "0xA5628A11c412596E1f63b75a2C0284F843C549d6"],
-  ["#5", "0x07a688a001f416cC433c68Ff56Aa26bC5131Cc6E"],
-  ["#4", "0xa36c443A797771Df82533B8B4A86F0AFfd970862"],
-  ["#3", "0x7A17Ab0106C46C0be30623F3EB7F299CC0058338"],
-];
+const TOKEN = (process.env.TOKEN_ADDRESS || "").toLowerCase();
+let FROM = process.env.FROM_ADDRESS || null; // wallet createur, si connu
 
 if (!TOKEN) {
-  console.error("usage: TOKEN_ADDRESS=0x… node probe.js");
+  console.error("usage: TOKEN_ADDRESS=0x… npm run probe");
+  console.error("       (optionnel) FROM_ADDRESS=0x… pour tester les droits");
   process.exit(1);
 }
 
-const p = new ethers.JsonRpcProvider(RPC, 5042, { staticNetwork: true });
+const p = new ethers.JsonRpcProvider(CHAIN.rpc, CHAIN.id, {
+  staticNetwork: true,
+});
+const line = (n = 70) => "─".repeat(n);
 const pad = (s, n) => String(s).padEnd(n);
+const fmt = (v, d = 18) => Number(ethers.formatUnits(v, d)).toLocaleString("en-US", { maximumFractionDigits: 6 });
 
+// ---------------------------------------------------------------------------
+// 1. Reseau
+// ---------------------------------------------------------------------------
 const net = await p.getNetwork();
+const head = await p.getBlockNumber();
+
 console.log(`
-  ARGUS LAUNCH PROBE                         read-only, no key required
-  ${"─".repeat(68)}
-  rpc        ${RPC}
-  chain id   ${net.chainId} ${Number(net.chainId) === 5042 ? "✓" : "✗ expected 5042"}
-  block      ${await p.getBlockNumber()}
-  token      ${TOKEN}
-`);
+  PONS LAUNCH PROBE                          read-only, no key required
+  ${line()}
+  rpc        ${CHAIN.rpc}
+  chain id   ${net.chainId} ${Number(net.chainId) === CHAIN.id ? "✓" : `✗ attendu ${CHAIN.id}`}
+  head       ${head}
+  token      ${TOKEN}`);
 
-const LAUNCH_ABI = ["function launches(address) view returns (address creator, int24 tickStart, bool tokenIsToken0, address locker, address hook, address splitter, uint16 buyTaxBps, uint16 sellTaxBps, uint256 positionId, int24 tickBond, address quoteAsset)"];
-
-let rec = null, portal = null;
-for (const [name, addr] of PORTALS) {
-  try {
-    const r = await new ethers.Contract(addr, LAUNCH_ABI, p).launches(TOKEN);
-    if (r.creator !== ethers.ZeroAddress) { rec = r; portal = [name, addr]; break; }
-  } catch {}
+// Temps de bloc reel — determinant sur un L2, ou les blocs sont rapides
+let blockTime = null;
+try {
+  const SPAN = 2000;
+  const [a, b] = await Promise.all([
+    p.getBlock(Math.max(1, head - SPAN)),
+    p.getBlock(head),
+  ]);
+  if (a && b && b.number > a.number) {
+    blockTime = (b.timestamp - a.timestamp) / (b.number - a.number);
+    const perMin = blockTime > 0 ? Math.round(60 / blockTime) : 0;
+    console.log(`  block time ${blockTime.toFixed(3)}s  (~${perMin} blocs/min)`);
+    console.log(`  → pour ~3 min d'annonce : DRAW_DELAY_BLOCKS=${perMin * 3}`);
+  }
+} catch (e) {
+  console.log(`  block time  non mesurable (${e.shortMessage || e.message})`);
 }
 
-if (!rec) {
-  console.log("  No portal recognises this token with the documented ABI.\n");
+// ---------------------------------------------------------------------------
+// 2. Le token
+// ---------------------------------------------------------------------------
+const token = new ethers.Contract(TOKEN, ERC20_ABI, p);
+let supply = null,
+  decimals = 18,
+  symbol = "?";
+try {
+  [symbol, decimals, supply] = await Promise.all([
+    token.symbol().catch(() => "?"),
+    token.decimals().catch(() => 18),
+    token.totalSupply(),
+  ]);
+  decimals = Number(decimals);
+  console.log(`
+  TOKEN
+  ${line()}
+  symbol     ${symbol}
+  decimals   ${decimals}
+  supply     ${fmt(supply, decimals)}`);
+} catch (e) {
+  console.log(`\n  ✗ Le token ne repond pas comme un ERC20 : ${e.shortMessage || e.message}`);
   process.exit(1);
 }
 
-console.log(`  LAUNCH RECORD                              portal ${portal[0]}
-  ${"─".repeat(68)}
-  creator    ${rec.creator}
-  splitter   ${rec.splitter}
-  hook       ${rec.hook}
-  locker     ${rec.locker}
-  tax        ${Number(rec.buyTaxBps) / 100}% buy  /  ${Number(rec.sellTaxBps) / 100}% sell
-  quote      ${rec.quoteAsset === USDC ? "USDC" : rec.quoteAsset}
+// ---------------------------------------------------------------------------
+// 2b. La factory Pons V2 : ce qu'elle dit du launch
+// ---------------------------------------------------------------------------
+let launch = null;
+try {
+  launch = await discoverLaunch(p, TOKEN);
+} catch (e) {
+  console.log(`  factory   ${PONS.factory} ne repond pas (${e.shortMessage || e.message})`);
+}
+if (launch) {
+  console.log(`
+  LAUNCH PONS V2                             lu sur la factory ${PONS.factory}
+  ${line()}
+  curve      ${launch.curve}   (bonding curve — a exclure)
+  deployer   ${launch.deployer}
+  fees a     ${launch.creatorFeeRecipient}   (creatorFeeRecipient — doit etre le wallet du bot)
+  pairing    ${launch.pairToken || "ETH natif"}
+  taxe       creatorTaxBps=${launch.creatorTaxBps}  protocolFeeShareBps=${launch.policy?.protocolFeeShareBps ?? "?"}  hookFeeBps=${launch.policy?.hookFeeBps ?? "?"}
+  phase      ${launch.phase} (${launch.phase === 2 ? "gradue" : "sur la curve"})`);
+} else {
+  console.log(`
+  ✗ Pas un launch Pons V2 : factory.getLaunchedToken() est vide.`);
+}
 
-  launches(address) → ABI matches the public repo ✓
-`);
+// ---------------------------------------------------------------------------
+// 3. Rejouer les Transfer : qui a mint, qui detient quoi
+// ---------------------------------------------------------------------------
+const iface = new ethers.Interface(ERC20_ABI);
+const topic = iface.getEvent("Transfer").topicHash;
 
-const tests = [
-  ["creditedToCreator(address)", "function creditedToCreator(address) view returns (uint256)", "creditedToCreator", [USDC]],
-  ["creatorFundsBps()", "function creatorFundsBps() view returns (uint16)", "creatorFundsBps", []],
-  ["buybackBurnBps()", "function buybackBurnBps() view returns (uint16)", "buybackBurnBps", []],
-  ["dividendsBps()", "function dividendsBps() view returns (uint16)", "dividendsBps", []],
-  ["liquidityBps()", "function liquidityBps() view returns (uint16)", "liquidityBps", []],
-  ["creator()", "function creator() view returns (address)", "creator", []],
-];
+// On remonte par fenetres jusqu'a trouver le premier mint (from = 0x0)
+const balances = {};
+let firstMintTo = null,
+  firstBlock = null,
+  logCount = 0;
 
-console.log(`  REVENUE SPLITTER                           which getters actually exist
-  ${"─".repeat(68)}`);
-for (const [label, abi, fn, args] of tests) {
+const CHUNK = 5000;
+const LOOKBACK = Number(process.env.LOOKBACK_BLOCKS || 400_000);
+const start = Math.max(0, head - LOOKBACK);
+
+process.stdout.write(`\n  indexation des transferts depuis le bloc ${start} `);
+for (let from = start; from <= head; from += CHUNK) {
+  const to = Math.min(head, from + CHUNK - 1);
+  let logs;
   try {
-    const v = await new ethers.Contract(rec.splitter, [abi], p)[fn](...args);
-    console.log(`  ✓  ${pad(label, 28)} ${v}`);
+    logs = await p.getLogs({ address: TOKEN, topics: [topic], fromBlock: from, toBlock: to });
   } catch {
-    console.log(`  ✗  ${pad(label, 28)} not present under this name`);
+    process.stdout.write("!");
+    continue;
   }
+  for (const l of logs) {
+    const { args } = iface.parseLog(l);
+    const f = args.from.toLowerCase(),
+      t = args.to.toLowerCase();
+    if (f === ethers.ZeroAddress.toLowerCase() && !firstMintTo) {
+      firstMintTo = t;
+      firstBlock = l.blockNumber;
+    }
+    if (f !== ethers.ZeroAddress.toLowerCase()) {
+      const cur = BigInt(balances[f] || "0") - args.value;
+      if (cur <= 0n) delete balances[f];
+      else balances[f] = cur.toString();
+    }
+    if (t !== ethers.ZeroAddress.toLowerCase()) {
+      balances[t] = (BigInt(balances[t] || "0") + args.value).toString();
+    }
+    logCount++;
+  }
+  if ((from - start) % (CHUNK * 20) === 0) process.stdout.write(".");
+}
+console.log(` ${logCount} transferts`);
+
+if (firstBlock) {
+  console.log(`  premier mint au bloc ${firstBlock} → DEPLOY_BLOCK=${firstBlock}`);
 }
 
+// ---------------------------------------------------------------------------
+// 4. Top holders — candidats a l'exclusion
+// ---------------------------------------------------------------------------
+const holders = Object.entries(balances)
+  .map(([addr, bal]) => ({ addr, bal: BigInt(bal) }))
+  .sort((a, b) => (b.bal > a.bal ? 1 : -1));
+
 console.log(`
-  CLAIM SIGNATURE                            simulated, nothing is sent
-  ${"─".repeat(68)}`);
-const variants = [
-  ["claim(address,address)", "function claim(address to, address quoteAsset)", [rec.creator, USDC]],
-  ["claim(address)", "function claim(address to)", [rec.creator]],
-  ["claim()", "function claim()", []],
-];
-for (const [label, sig, args] of variants) {
-  const c = new ethers.Contract(rec.splitter, [sig], p);
-  const fn = label.split("(")[0];
-  let verdict;
+  TOP HOLDERS                                les contrats sont a exclure
+  ${line()}`);
+
+const contractFlags = [];
+for (const h of holders.slice(0, 12)) {
+  const pct = supply > 0n ? Number((h.bal * 10000n) / supply) / 100 : 0;
+  let kind = "wallet";
   try {
-    await c[fn].staticCall(...args, { from: rec.creator });
-    verdict = "✓  exists, callable";
-  } catch (e) {
-    const m = String(e.shortMessage || e.message);
-    verdict = m.includes("missing revert data")
-      ? "✗  no such function"
-      : "✓  exists (reverted — nothing to claim or not authorised)";
-  }
-  console.log(`  ${pad(label, 28)} ${verdict}`);
+    const code = await p.getCode(h.addr);
+    if (code && code !== "0x") {
+      kind = "CONTRAT";
+      contractFlags.push(h.addr);
+    }
+  } catch {}
+  console.log(`  ${pad(h.addr, 44)} ${pad(pct.toFixed(2) + "%", 9)} ${kind}`);
 }
 
-console.log(`
-  ${"─".repeat(68)}
-  The deployed portal does not match the public repo one-for-one.
-  Probe before you trust the docs.
+if (firstMintTo && !contractFlags.includes(firstMintTo)) contractFlags.push(firstMintTo);
+if (launch && !contractFlags.includes(launch.curve.toLowerCase())) contractFlags.push(launch.curve.toLowerCase());
 
-  github.com/bigrceo/roulette-arc
+console.log(`
+  → ${contractFlags.length} contrat(s) detiennent des tokens. Sur Pons V2 la
+    bonding curve en fait partie : s'ils ne sont pas exclus, ils gagnent
+    les tirages.`);
+
+if (!FROM && launch) FROM = launch.creatorFeeRecipient; // on teste avec le vrai destinataire
+
+// ---------------------------------------------------------------------------
+// 5. Chercher l'escrow des fees
+// ---------------------------------------------------------------------------
+// Candidats : les contrats qui detiennent des tokens, le destinataire du
+// premier mint, et toute adresse fournie via PONS_ESCROW / PONS_FACTORY.
+const targets = [
+  ...new Set(
+    [...contractFlags, firstMintTo, PONS.escrow, PONS.factory]
+      .filter(Boolean)
+      .map((a) => a.toLowerCase())
+  ),
+];
+
+console.log(`
+  RECHERCHE DE L'ESCROW                      ${targets.length} contrat(s) testes
+  ${line()}`);
+
+const found = [];
+for (const addr of targets) {
+  const hits = [];
+
+  // qui est designe comme createur / proprietaire ?
+  for (const sig of CREATOR_CANDIDATES) {
+    const fn = sig.match(/function (\w+)/)[1];
+    try {
+      const v = await new ethers.Contract(addr, [sig], p)[fn]();
+      if (v && v !== ethers.ZeroAddress) hits.push(`${fn}() = ${v}`);
+    } catch {}
+  }
+
+  // y a-t-il un montant en attente lisible ?
+  const who = FROM || (hits.length ? hits[0].split("= ")[1] : null);
+  if (who) {
+    for (const sig of PENDING_CANDIDATES) {
+      const fn = sig.match(/function (\w+)/)[1];
+      try {
+        const v = await new ethers.Contract(addr, [sig], p)[fn](who);
+        if (v !== undefined && v !== null) hits.push(`${fn}(creator) = ${v}`);
+      } catch {}
+    }
+  }
+
+  if (hits.length) {
+    console.log(`\n  ${addr}`);
+    for (const h of hits) console.log(`    ✓ ${h}`);
+    found.push({ addr, hits });
+  }
+}
+if (!found.length) {
+  console.log(`
+  Aucun getter reconnu sur ces contrats.
+  L'escrow Pons est peut-etre une adresse globale distincte. Recupere-la
+  depuis l'explorer (une tx de retrait de fees d'un autre createur) et
+  relance avec PONS_ESCROW=0x…`);
+}
+
+// ---------------------------------------------------------------------------
+// 6. Signature de retrait — le point qui debloque le bot
+// ---------------------------------------------------------------------------
+console.log(`
+  SIGNATURE DE RETRAIT                       simule, rien n'est envoye
+  ${line()}`);
+
+const claimTargets = found.length ? found.map((f) => f.addr) : targets;
+const working = [];
+
+for (const addr of claimTargets) {
+  const caller = FROM || undefined;
+  let printed = false;
+  for (const cand of CLAIM_CANDIDATES) {
+    const fn = cand.sig.match(/function (\w+)/)[1];
+    const args = cand.args(caller || ethers.ZeroAddress, TOKEN, launch?.pairToken || PONS.feeAsset || ethers.ZeroAddress);
+    const c = new ethers.Contract(addr, [cand.sig], p);
+    let verdict = null;
+    try {
+      await c[fn].staticCall(...args, caller ? { from: caller } : {});
+      verdict = "✓ existe et passe";
+      working.push({ addr, sig: cand.sig, state: "callable" });
+    } catch (e) {
+      const m = String(e.shortMessage || e.message || "");
+      if (m.includes("missing revert data") || m.includes("no data present")) {
+        // fonction absente : on ne l'affiche pas, ca noierait la sortie
+      } else {
+        verdict = `✓ existe (revert : ${m.slice(0, 44)})`;
+        working.push({ addr, sig: cand.sig, state: "exists" });
+      }
+    }
+    if (verdict) {
+      if (!printed) {
+        console.log(`\n  ${addr}`);
+        printed = true;
+      }
+      console.log(`    ${pad(cand.sig.replace("function ", "").replace(" external", ""), 40)} ${verdict}`);
+    }
+  }
+}
+
+if (!working.length) {
+  console.log(`
+  Aucune signature candidate ne repond.
+  Deux pistes :
+   1. l'escrow n'est pas dans la liste testee — trouve-le sur l'explorer
+   2. le nom de la fonction n'est pas couvert — ajoute-le dans
+      CLAIM_CANDIDATES de chain.js et relance`);
+}
+
+// ---------------------------------------------------------------------------
+// 7. Config prete a coller
+// ---------------------------------------------------------------------------
+const best = working.find((w) => w.state === "callable") || working[0];
+const perMin = blockTime > 0 ? Math.round(60 / blockTime) : 600;
+
+console.log(`
+
+  A RECOPIER DANS chain.js / .env
+  ${line()}
+  TOKEN_ADDRESS=${TOKEN}
+  DEPLOY_BLOCK=${firstBlock || "?"}
+  DRAW_DELAY_BLOCKS=${perMin * 3}
+  EXCLUDED=${contractFlags.join(",") || "?"}
+  PONS_ESCROW=${best ? best.addr : "?"}
+  FEE_ASSET=${launch?.pairToken || "(vide : ETH natif)"}
+  FEE_DECIMALS=${launch?.pairToken ? await new ethers.Contract(launch.pairToken, ERC20_ABI, p).decimals().catch(() => "?") : 18}
+${best ? `  signature retenue : ${best.sig}` : "  signature : non trouvee, voir ci-dessus"}
+  ${line()}
 `);

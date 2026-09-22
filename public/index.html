@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>$ROULETTE — the wheel pays one holder</title>
-<meta name="description" content="Every trade spins the wheel. When the pot fills, one holder takes all of it — drawn from a block hash that does not exist yet.">
+<meta name="description" content="Every trade feeds the pot. When it fills, one holder takes all of it — drawn from a block hash that does not exist yet.">
 <meta property="og:title" content="$ROULETTE — the wheel pays one holder">
-<meta property="og:description" content="Every trade spins the wheel. One holder takes the whole pot.">
+<meta property="og:description" content="Every trade feeds the pot. One holder takes the whole pot.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://rouletteonarc.up.railway.app/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="$ROULETTE — the wheel pays one holder">
-<meta name="twitter:description" content="Every trade spins the wheel. One holder takes the whole pot.">
+<meta name="twitter:description" content="Every trade feeds the pot. One holder takes the whole pot.">
 <meta name="twitter:image" content="https://rouletteonarc.up.railway.app/og.png">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%230B0A09'/%3E%3Ccircle cx='50' cy='50' r='44' fill='none' stroke='%23B8912F' stroke-width='4'/%3E%3Cpath d='M50 50 L50 8 A42 42 0 0 1 86 29 Z' fill='%23B01E28'/%3E%3Cpath d='M50 50 L86 71 A42 42 0 0 1 14 71 Z' fill='%23B01E28'/%3E%3Cpath d='M50 50 L14 29 A42 42 0 0 1 50 8 Z' fill='%230F7A43'/%3E%3Ccircle cx='50' cy='50' r='16' fill='%23B8912F'/%3E%3Ccircle cx='50' cy='50' r='7' fill='%230B0A09'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,17 +19,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,600;0,6..96,800;1,6..96,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#0B0A09;
-    --ink-2:#14110F;
-    --ink-3:#1E1915;
-    --blood:#B01E28;
-    --blood-lo:#7A1219;
-    --au:#B8912F;
-    --au-lo:#7A5C1B;
-    --au-hi:#E8CC78;
-    --cream:#F0E6D2;
-    --cream-dim:#A99C86;
-    --cream-faint:#6B6153;
+    --ink:#0B0A09; --ink-2:#14110F; --ink-3:#1E1915;
+    --blood:#B01E28; --blood-lo:#7A1219;
+    --au:#B8912F; --au-lo:#7A5C1B; --au-hi:#E8CC78;
+    --cream:#F0E6D2; --cream-dim:#A99C86; --cream-faint:#6B6153;
     --display:"Bodoni Moda",Didot,"Times New Roman",serif;
     --sans:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
     --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
@@ -59,12 +52,15 @@
   .brand svg{width:42px;height:42px;flex:0 0 42px}
   .brand-name{font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:.22em;line-height:1}
   .brand-sub{font-family:var(--mono);font-size:10px;letter-spacing:.24em;color:var(--cream-faint);text-transform:uppercase;margin-top:6px}
+  nav{margin-left:auto;font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase}
+  nav a{border-bottom:none;color:var(--cream-dim)}
+  nav a:hover{color:var(--au-hi)}
+  .sep{color:var(--cream-faint);margin:0 10px}
 
   .hero{padding:62px 0 18px;text-align:center}
   .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--au);margin-bottom:26px}
   .eyebrow span{color:var(--cream-faint)}
-  h1{font-family:var(--display);font-weight:400;font-size:clamp(38px,7.2vw,72px);line-height:1.04;
-     letter-spacing:-.015em;margin:0 0 20px}
+  h1{font-family:var(--display);font-weight:400;font-size:clamp(38px,7.2vw,72px);line-height:1.04;letter-spacing:-.015em;margin:0 0 20px}
   h1 em{font-style:italic;color:var(--blood);font-weight:600}
   .lede{color:var(--cream-dim);font-size:17px;max-width:520px;margin:0 auto}
 
@@ -75,29 +71,24 @@
     box-shadow:0 0 0 1px rgba(184,145,47,.22), 0 30px 70px -30px rgba(0,0,0,.9);
   }
   .felt-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--au)}
-  .pot{font-family:var(--mono);font-weight:500;font-size:clamp(46px,13vw,80px);
-       letter-spacing:-.035em;margin:12px 0 2px;color:var(--cream);font-variant-numeric:tabular-nums}
+  .pot{font-family:var(--mono);font-weight:500;font-size:clamp(40px,11vw,68px);letter-spacing:-.035em;margin:12px 0 2px;color:var(--cream);font-variant-numeric:tabular-nums}
   .pot-note{color:var(--cream-dim);font-size:13.5px}
   .track{height:6px;background:#0A0908;border:1px solid rgba(184,145,47,.2);margin:26px 0 10px;overflow:hidden}
-  .track>div{height:100%;width:0%;transition:width .7s cubic-bezier(.2,.8,.3,1);
-    background:linear-gradient(90deg,var(--blood-lo),var(--blood) 60%,var(--au-hi))}
-  .track-legend{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;
-    letter-spacing:.08em;color:var(--cream-faint)}
-  .spinning{margin-top:22px;padding:14px 16px;border-left:2px solid var(--blood);
-    background:rgba(176,30,40,.09);font-size:14px;color:var(--cream-dim);display:none}
+  .track>div{height:100%;width:0%;transition:width .7s cubic-bezier(.2,.8,.3,1);background:linear-gradient(90deg,var(--blood-lo),var(--blood) 60%,var(--au-hi))}
+  .track-legend{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--cream-faint)}
+  .spinning{margin-top:22px;padding:14px 16px;border-left:2px solid var(--blood);background:rgba(176,30,40,.09);font-size:14px;color:var(--cream-dim);display:none}
   .spinning b{color:var(--cream);font-family:var(--mono);font-weight:500}
+  .buy{display:none;width:100%;margin-top:22px;padding:15px;text-align:center;font-family:var(--mono);font-size:12.5px;letter-spacing:.2em;text-transform:uppercase;color:#0B0A09;background:linear-gradient(180deg,var(--au-hi),var(--au));border:none;border-bottom:none;font-weight:600}
+  .buy:hover{background:var(--au-hi);border-bottom:none}
 
-  .stats{display:grid;grid-template-columns:repeat(3,1fr);margin:46px 0 0;
-    border-top:1px solid var(--ink-3);border-bottom:1px solid var(--ink-3)}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);margin:46px 0 0;border-top:1px solid var(--ink-3);border-bottom:1px solid var(--ink-3)}
   .stat{padding:22px 18px;text-align:center;border-right:1px solid var(--ink-3)}
   .stat:last-child{border-right:0}
   .stat-v{font-family:var(--mono);font-size:21px;font-weight:500;font-variant-numeric:tabular-nums}
-  .stat-l{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;
-    color:var(--cream-faint);margin-top:7px}
+  .stat-l{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--cream-faint);margin-top:7px}
 
   section{padding:54px 0}
-  h2{font-family:var(--mono);font-size:11px;letter-spacing:.3em;text-transform:uppercase;
-     color:var(--au);margin:0 0 30px;font-weight:500}
+  h2{font-family:var(--mono);font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--au);margin:0 0 30px;font-weight:500}
   .steps{display:grid;gap:22px}
   .step{display:grid;grid-template-columns:52px 1fr;gap:6px;align-items:start}
   .step-n{font-family:var(--display);font-size:34px;font-weight:400;color:var(--au-lo);line-height:1}
@@ -108,11 +99,8 @@
   .prose .muted{color:var(--cream-dim)}
 
   table{width:100%;border-collapse:collapse}
-  th{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
-     color:var(--cream-faint);text-align:left;font-weight:500;padding:0 12px 12px 0;
-     border-bottom:1px solid rgba(184,145,47,.3)}
-  td{padding:15px 12px 15px 0;border-bottom:1px solid var(--ink-3);font-size:14px;
-     font-family:var(--mono);font-variant-numeric:tabular-nums}
+  th{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--cream-faint);text-align:left;font-weight:500;padding:0 12px 12px 0;border-bottom:1px solid rgba(184,145,47,.3)}
+  td{padding:15px 12px 15px 0;border-bottom:1px solid var(--ink-3);font-size:14px;font-family:var(--mono);font-variant-numeric:tabular-nums}
   td.num{font-family:var(--display);font-size:19px;color:var(--au-lo);width:42px}
   .amount{color:var(--au-hi);font-weight:600}
   .failed{color:var(--blood)}
@@ -120,23 +108,11 @@
 
   .ca{border:1px solid var(--ink-3);padding:24px;background:var(--ink-2)}
   .ca-lead{font-size:13.5px;color:var(--cream-dim)}
-  .ca-addr{font-family:var(--mono);font-size:13px;word-break:break-all;color:var(--au-hi);
-    background:#0A0908;border:1px solid rgba(184,145,47,.2);padding:14px;margin:12px 0}
+  .ca-addr{font-family:var(--mono);font-size:13px;word-break:break-all;color:var(--au-hi);background:#0A0908;border:1px solid rgba(184,145,47,.2);padding:14px;margin:12px 0}
   .ca-warn{font-size:12.5px;color:var(--cream-faint)}
 
-  .brand{position:relative}
-  nav{margin-left:auto;font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase}
-  nav a{border-bottom:none;color:var(--cream-dim)}
-  nav a:hover{color:var(--au-hi)}
-  .sep{color:var(--cream-faint);margin:0 10px}
-  .buy{display:none;width:100%;margin-top:22px;padding:15px;text-align:center;
-    font-family:var(--mono);font-size:12.5px;letter-spacing:.2em;text-transform:uppercase;
-    color:#0B0A09;background:linear-gradient(180deg,var(--au-hi),var(--au));
-    border:none;border-bottom:none;font-weight:600}
-  .buy:hover{background:var(--au-hi);border-bottom:none}
-  .foot-links{margin-top:16px}
-  .loading{color:var(--cream-faint)}
   footer{padding:40px 0 56px;color:var(--cream-faint);font-size:12.5px;text-align:center}
+  .foot-links{margin-top:16px}
   @media(max-width:560px){
     .stats{grid-template-columns:1fr}
     .stat{border-right:0;border-bottom:1px solid var(--ink-3)}
@@ -171,7 +147,7 @@
       </svg>
       <div>
         <div class="brand-name">ROULETTE</div>
-        <div class="brand-sub">On Arc · settled in USDC</div>
+        <div class="brand-sub">On Robinhood Chain</div>
       </div>
       <nav id="nav-links"></nav>
     </div>
@@ -185,11 +161,11 @@
     <div class="felt">
       <div class="felt-label">Pot on the table</div>
       <div class="pot" id="pot">—</div>
-      <div class="pot-note" id="pot-note">USDC, waiting for one address</div>
+      <div class="pot-note" id="pot-note">waiting for one address</div>
       <div class="track"><div id="bar"></div></div>
       <div class="track-legend"><span id="pct">—</span><span id="thr">—</span></div>
       <div class="spinning" id="spinning"></div>
-      <a class="buy" id="buy" href="#" target="_blank" rel="noopener">Buy $ROULETTE on Argus</a>
+      <a class="buy" id="buy" href="#" target="_blank" rel="noopener">Buy $ROULETTE on Pons</a>
     </div>
   </div>
 
@@ -203,10 +179,10 @@
     <h2>The house rules</h2>
     <div class="steps">
       <div class="step"><div class="step-n">I</div><div>
-        <h3>Every buy and sell pays 5%</h3>
-        <p>It lands in the launch's revenue contract on Argus, denominated in USDC.</p></div></div>
+        <h3>Every trade pays a fee</h3>
+        <p>It lands in the launch's fee contract on Pons. The launchpad takes its share first — what reaches this project is what is left after that.</p></div></div>
       <div class="step"><div class="step-n">II</div><div>
-        <h3><span id="s-pot">70</span>% of what is left goes on the table</h3>
+        <h3><span id="s-pot">70</span>% of what arrives goes on the table</h3>
         <p>The other <span id="s-dev">30</span>% funds the project. Written here rather than buried — you should know who takes what before you buy.</p></div></div>
       <div class="step"><div class="step-n">III</div><div>
         <h3>At the line, the wheel locks</h3>
@@ -222,8 +198,8 @@
   <section>
     <h2>Why you don't have to trust us</h2>
     <div class="prose">
-      <p>The winner falls out of two public inputs: token balances frozen at the draw block, and the hash of that same block. Both live on Arc. Neither can be touched once the block is announced.</p>
-      <p class="muted">Every spin below shows its draw block, the hash it produced and the payout transaction. The verification script is open source and runs the exact same code as the bot — point it at any round and you should land on the same address.<span id="verify-link"></span></p>
+      <p>The winner falls out of two public inputs: token balances frozen at the draw block, and the hash of that same block. Both live on Robinhood Chain. Neither can be touched once the block is announced.</p>
+      <p class="muted">Every spin below shows its draw block, the hash it produced and the payout transaction. The verification script is open source and imports the exact same module as the bot — point it at any round and you should land on the same address.<span id="verify-link"></span></p>
     </div>
   </section>
 
@@ -241,7 +217,7 @@
     <div class="ca">
       <div class="ca-lead">The one official address:</div>
       <div class="ca-addr" id="ca">—</div>
-      <div class="ca-warn">Read every character before you buy. Copies of new tokens circulate on Arc within minutes of a launch.</div>
+      <div class="ca-warn">Read every character before you buy. Copies of new tokens circulate within minutes of a launch.</div>
     </div>
   </section>
 
@@ -254,52 +230,67 @@
 
 <script>
 // ===========================================================================
-//  A REMPLIR — mets tes vraies URLs ici, c'est le seul endroit a modifier.
+//  A REMPLIR — le seul endroit a modifier.
 //  Laisse "" pour masquer un lien tant qu'il n'existe pas.
 // ===========================================================================
 const LINKS = {
-  x:        "https://x.com/RouletteOnArc",
+  x:        "",
   telegram: "",
   github:   "https://github.com/bigrceo/roulette-arc",
-  buy:      ""   // page Argus du token, dispo apres le lancement
+  buy:      ""   // page Pons du token, dispo apres le lancement
 };
-const SITE_URL = "https://rouletteonarc.up.railway.app";
 // ===========================================================================
 
 const $ = id => document.getElementById(id);
 const short = a => a ? a.slice(0,6)+'…'+a.slice(-4) : '—';
-const money = n => '$' + Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num = (n, sym) => Number(n).toLocaleString('en-US',{minimumFractionDigits:4,maximumFractionDigits:4}) + (sym ? ' ' + sym : '');
+
+function renderLinks(){
+  const mk = (url,label) => url ? '<a href="'+url+'" target="_blank" rel="noopener">'+label+'</a>' : '';
+  const nav = [mk(LINKS.x,'X'), mk(LINKS.telegram,'Telegram'), mk(LINKS.github,'GitHub')].filter(Boolean);
+  $('nav-links').innerHTML = nav.join('<span class="sep">·</span>');
+  $('foot-links').innerHTML = nav.join('<span class="sep">·</span>');
+  if (LINKS.buy){ $('buy').href = LINKS.buy; $('buy').style.display = 'inline-block'; }
+  if (LINKS.github){ $('verify-link').innerHTML = ' <a href="'+LINKS.github+'" target="_blank" rel="noopener">Read the code &rarr;</a>'; }
+}
 
 async function load(){
   let s;
   try { s = await (await fetch('/api/state')).json(); } catch(e){ return; }
 
+  const sym = s.symbol || '';
+  $('s-pot').textContent = s.potShare;
+  $('s-dev').textContent = s.devShare;
+
   if (s.prelaunch){
-    $('pot').textContent='SOON'; $('pot').style.fontSize='clamp(40px,10vw,64px)';
-    $('pot-note').textContent='The wheel is not spinning yet';
-    $('bar').style.width='0%'; $('pct').textContent='not live';
-    $('thr').textContent='spins at '+money(s.thresholdUsdc);
-    $('paid').textContent='—'; $('rounds').textContent='—'; $('eligible').textContent='—';
-    $('ca').textContent='Published at launch';
-    $('s-pot').textContent=s.potShare; $('s-dev').textContent=s.devShare;
-    $('spinning').style.display='none'; return;
+    $('pot').textContent = 'SOON';
+    $('pot-note').textContent = 'the wheel is not spinning yet';
+    $('bar').style.width = '0%';
+    $('pct').textContent = 'not live';
+    $('thr').textContent = 'spins at ' + num(s.threshold, sym);
+    $('paid').textContent = '—'; $('rounds').textContent = '—'; $('eligible').textContent = '—';
+    $('ca').textContent = 'Published at launch';
+    $('spinning').style.display = 'none';
+    return;
   }
-  $('pot').textContent = money(s.potUsdc);
-  const pct = Math.min(100, (s.potUsdc / s.thresholdUsdc) * 100);
+
+  $('pot').textContent = num(s.pot, sym);
+  $('pot-note').textContent = s.pending > 0
+    ? '+ ' + num(s.pending, sym) + ' waiting in the Pons fee escrow, not collected yet'
+    : 'waiting for one address';
+  const pct = Math.min(100, (s.pot / s.threshold) * 100);
   $('bar').style.width = pct + '%';
   $('pct').textContent = pct.toFixed(0) + '% to the line';
-  $('thr').textContent = 'spins at ' + money(s.thresholdUsdc);
-  $('paid').textContent = money(s.totalPaid);
+  $('thr').textContent = 'spins at ' + num(s.threshold, sym);
+  $('paid').textContent = num(s.totalPaid, sym);
   $('rounds').textContent = s.rounds.length;
   $('eligible').textContent = s.eligibleCount;
   $('ca').textContent = s.token;
-  $('s-pot').textContent = s.potShare;
-  $('s-dev').textContent = s.devShare;
 
   const d = $('spinning');
   if (s.pendingDraw){
     d.style.display = 'block';
-    d.innerHTML = 'Spin <b>#' + s.pendingDraw.round + '</b> is locked. The winner comes from block <b>'
+    d.innerHTML = 'Spin <b>#'+s.pendingDraw.round+'</b> is locked. The winner comes from block <b>'
       + s.pendingDraw.targetBlock + '</b> — not mined yet.';
   } else d.style.display = 'none';
 
@@ -307,29 +298,16 @@ async function load(){
     $('rounds-box').innerHTML =
       '<table><thead><tr><th>#</th><th>Winner</th><th>Pot</th><th>Draw block</th><th>Payout</th></tr></thead><tbody>'
       + s.rounds.map(r => '<tr>'
-        + '<td class="num">' + r.round + '</td>'
-        + '<td><a href="' + s.explorer + '/address/' + r.winner + '">' + short(r.winner) + '</a></td>'
-        + '<td class="amount">' + money(r.amountUsdc) + '</td>'
-        + '<td>' + r.targetBlock + '</td>'
-        + '<td>' + (r.txHash
-            ? '<a href="' + s.explorer + '/tx/' + r.txHash + '">' + short(r.txHash) + '</a>'
-            : '<span class="failed">failed</span>') + '</td>'
+        + '<td class="num">'+r.round+'</td>'
+        + '<td><a href="'+s.explorer+'/address/'+r.winner+'">'+short(r.winner)+'</a></td>'
+        + '<td class="amount">'+num(r.amount, sym)+'</td>'
+        + '<td>'+r.targetBlock+'</td>'
+        + '<td>'+(r.txHash
+            ? '<a href="'+s.explorer+'/tx/'+r.txHash+'">'+short(r.txHash)+'</a>'
+            : '<span class="failed">failed</span>')+'</td>'
         + '</tr>').join('')
       + '</tbody></table>';
   }
-}
-function renderLinks(){
-  const mk = (url, label) => url ? '<a href="'+url+'" target="_blank" rel="noopener">'+label+'</a>' : '';
-  const nav = [mk(LINKS.x,'X'), mk(LINKS.telegram,'Telegram'), mk(LINKS.github,'GitHub')].filter(Boolean);
-  $('nav-links').innerHTML = nav.join('<span class="sep">·</span>');
-  if (LINKS.buy){
-    $('buy').href = LINKS.buy;
-    $('buy').style.display = 'inline-block';
-  }
-  if (LINKS.github){
-    $('verify-link').innerHTML = ' <a href="'+LINKS.github+'" target="_blank" rel="noopener">Read the code &rarr;</a>';
-  }
-  $('foot-links').innerHTML = nav.join('<span class="sep">·</span>');
 }
 renderLinks();
 load();
