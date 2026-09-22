@@ -4,6 +4,7 @@
 
 import { ethers } from "ethers";
 import { isqrt, eligibleHolders, pickWinner, splitAmount, applyTransfer, reconcileBalance } from "./lib.js";
+import { oauthSignature, fill } from "./x.js";
 
 const SUPPLY = 1_000_000_000n * 10n ** 18n;
 let pass = 0,
@@ -140,6 +141,36 @@ console.log("\n9. Comptabilite par reconciliation");
   // le gas consomme creuse un ecart qui se resorbe
   r = reconcileBalance(E("0.1029"), RES, E("0.07"), E("0.03"), 70);
   ok(r.incoming === 0n, "le gas consomme ne cree pas d'entrant negatif");
+}
+
+console.log("\n10. Posts X");
+{
+  // Exemple officiel de la doc X "Creating a signature" : cles, nonce et
+  // timestamp connus, signature attendue connue.
+  const params = {
+    include_entities: "true",
+    oauth_consumer_key: "xvz1evFS4wEEPTGEFPHBog",
+    oauth_nonce: "kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg",
+    oauth_signature_method: "HMAC-SHA1",
+    oauth_timestamp: "1318622958",
+    oauth_token: "370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb",
+    oauth_version: "1.0",
+    status: "Hello Ladies + Gentlemen, a signed OAuth request!",
+  };
+  const sig = oauthSignature(
+    "POST",
+    "https://api.twitter.com/1.1/statuses/update.json",
+    params,
+    "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw",
+    "LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE"
+  );
+  ok(sig === "hCtSmYh+iHYCEqBWrE7C7hYmtUk=", "signature OAuth 1.0a identique a l'exemple officiel de X");
+  ok(
+    fill("Spin #{round}: {pot} {symbol} → {winner}", { round: 3, pot: "0.02", symbol: "ETH", winner: "0xab…cd" }) ===
+      "Spin #3: 0.02 ETH → 0xab…cd",
+    "les variables {x} des templates sont remplacees"
+  );
+  ok(fill("{pot} {unknown}", { pot: "1" }) === "1 {unknown}", "une variable inconnue reste visible plutot que vide");
 }
 
 console.log(`\n${pass} OK, ${fail} KO\n`);

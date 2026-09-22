@@ -62,7 +62,7 @@ chain, recomputes the winner and compares against what was published.
 `verify.js` and the bot both import the same `lib.js`, so the two cannot drift
 apart — even if the rules change later.
 
-Run the logic tests with `npm test`: 28 assertions, no network needed.
+Run the logic tests with `npm test`: 31 assertions, no network needed.
 
 ---
 
@@ -160,6 +160,19 @@ THRESHOLD=0.03 GAS_RESERVE=0.005 DRAW_DELAY_BLOCKS=4 TICK_SECONDS=2 npm start
 
 ---
 
+## Posts on X
+
+With `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN` and `X_ACCESS_SECRET` set,
+the bot posts from [@getroulette](https://x.com/getroulette) at three moments:
+the pot passing half of the threshold, the draw block being announced, and the
+payout landing (with the transaction link). Each post is recorded in
+`state.json` so a restart never reposts. A failed post is logged and skipped;
+it never delays a draw. `X_DRY_RUN=true` prints the posts instead of sending
+them. Templates live in `x.js` and can be overridden with
+`X_TEMPLATE_ANNOUNCE`, `X_TEMPLATE_RESULT`, `X_TEMPLATE_HALF`.
+
+---
+
 ## Accounting
 
 The bot does not measure a balance delta around a transaction. That approach is
@@ -211,6 +224,7 @@ gambling rules in some jurisdictions. Not legal advice.
 | `verify.js` | independent round verification |
 | `test.mjs` | logic tests, no network |
 | `mocknode.mjs` | fake node for local testing |
+| `x.js` | posts on X, OAuth 1.0a without dependencies |
 | `public/` | the site |
 
 ---

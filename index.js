@@ -22,6 +22,7 @@ import {
   feeIsNative,
 } from "./chain.js";
 import { eligibleHolders, pickWinner, splitAmount, applyTransfer, reconcileBalance } from "./lib.js";
+import * as X from "./x.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -35,6 +36,7 @@ const POT_SHARE = Number(process.env.POT_SHARE || 70);
 const DRAW_DELAY = Number(process.env.DRAW_DELAY_BLOCKS || 600);
 const TICK_SECONDS = Number(process.env.TICK_SECONDS || 30);
 const PORT = Number(process.env.PORT || 3000);
+const SITE_URL = process.env.SITE_URL || "https://rouletteonchain.world";
 
 const FEE_DECIMALS = PONS.feeDecimals;
 const THRESHOLD = ethers.parseUnits(process.env.THRESHOLD || "0.02", FEE_DECIMALS);
@@ -90,6 +92,37 @@ function save() {
   fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
 }
 const amt = (raw) => Number(ethers.formatUnits(raw, FEE_DECIMALS));
+const fmtAmt = (raw) => amt(raw).toLocaleString("en-US", { maximumFractionDigits: 4 });
+const shortAddr = (a) => (a ? a.slice(0, 6) + "…" + a.slice(-4) : "");
+
+// ---------------------------------------------------------------------------
+// POSTS X — jamais bloquants. `state.posted` garde ce qui a deja ete publie
+// pour qu'un redemarrage ne reposte pas.
+// ---------------------------------------------------------------------------
+async function social(kind, key, vars) {
+  if (!X.xEnabled()) return;
+  state.posted ||= {};
+  const id = `${kind}:${key}`;
+  if (state.posted[id]) return;
+  try {
+    const tweetId = await X.post(
+      X.fill(X.TEMPLATES[kind], {
+        symbol: FEE_SYMBOL,
+        site: SITE_URL,
+        explorer: CHAIN.explorer,
+        threshold: fmtAmt(THRESHOLD),
+        ...vars,
+      })
+    );
+    if (tweetId) {
+      state.posted[id] = tweetId;
+      save();
+      console.log(`X: ${kind} #${key} publie (${tweetId})`);
+    }
+  } catch (e) {
+    console.error(`X ${kind} KO:`, e.message);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // SOLDE DE L'ACTIF DE PAIEMENT
@@ -249,6 +282,12 @@ async function reconcile() {
   console.log(
     `+${amt(incoming)} → pot +${amt(pot)} / dev +${amt(dev)}   (pot total ${amt(BigInt(state.pot))})`
   );
+
+  // a mi-chemin du seuil, une fois par round
+  const potNow = BigInt(state.pot);
+  if (!state.pendingDraw && potNow * 2n >= THRESHOLD && potNow < THRESHOLD) {
+    await social("half", state.rounds.length + 1, { pot: fmtAmt(potNow) });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -270,6 +309,11 @@ async function announceDrawIfReady(head) {
   console.log(
     `ROUND ${state.pendingDraw.round} annonce — pot ${amt(pot)}, tirage au bloc ${state.pendingDraw.targetBlock}`
   );
+  await social("announce", state.pendingDraw.round, {
+    round: state.pendingDraw.round,
+    pot: fmtAmt(pot),
+    block: state.pendingDraw.targetBlock,
+  });
 }
 
 async function executeDrawIfDue(head) {
@@ -337,6 +381,15 @@ async function executeDrawIfDue(head) {
   save();
 
   console.log(`ROUND ${d.round} — ${amt(payout)} → ${winner.addr} (${txHash || "ECHEC"})`);
+  if (txHash) {
+    await social("result", d.round, {
+      round: d.round,
+      pot: fmtAmt(payout),
+      block: d.targetBlock,
+      winner: shortAddr(winner.addr),
+      tx: `${CHAIN.explorer}/tx/${txHash}`,
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -503,7 +556,8 @@ async function main() {
   console.log(`launch    ${LAUNCH ? `creatorTaxBps=${LAUNCH.creatorTaxBps} protocolFeeShareBps=${LAUNCH.policy?.protocolFeeShareBps ?? "?"} phase=${LAUNCH.phase}` : "?"}`);
   console.log(`split     ${POT_SHARE}% pot / ${100 - POT_SHARE}% dev`);
   console.log(`seuil     ${amt(THRESHOLD)}`);
-  console.log(`exclus    ${EXCLUDED.size} adresses\n`);
+  console.log(`exclus    ${EXCLUDED.size} adresses`);
+  console.log(`X         ${X.xEnabled() ? (process.env.X_DRY_RUN ? "dry-run" : "actif") : "desactive (pas de cles)"}\n`);
 
   if (!PONS.escrow) {
     console.log("ATTENTION : PONS_ESCROW n'est pas configure.");
