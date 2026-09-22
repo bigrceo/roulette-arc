@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://roulette-robinhood.up.railway.app/api/$1" }
+  ],
+  "headers": [
+    { "source": "/(.*)\\.(png|gif)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }] }
+  ]
+}
