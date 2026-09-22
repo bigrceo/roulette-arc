@@ -6,7 +6,7 @@ the time the draw was announced.
 
 Live on [Robinhood Chain](https://robinhoodchain.blockscout.com) (chain id
 4663, an Arbitrum rollup), launched through [Pons](https://www.ponsfamily.com).
-Site: [roulette-robinhood.up.railway.app](https://roulette-robinhood.up.railway.app).
+Site: [rouletteonchain.world](https://rouletteonchain.world) · X: [@getroulette](https://x.com/getroulette).
 
 **This repo exists so you don't have to trust the operator.** The draw logic
 here is the exact code the bot runs, and `verify.js` lets anyone recompute any
