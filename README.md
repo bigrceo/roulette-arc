@@ -225,7 +225,7 @@ gambling rules in some jurisdictions. Not legal advice.
 | `test.mjs` | logic tests, no network |
 | `mocknode.mjs` | fake node for local testing |
 | `x.js` | posts on X, OAuth 1.0a without dependencies |
-| `public/` | the site |
+| `public/` | the site — `wheel.js` is the procedural Three.js roulette wheel in the hero, driven by the round state (idle, locked, paid) |
 
 ---
 

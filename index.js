@@ -459,6 +459,9 @@ const MIME = {
   ".ico": "image/x-icon",
   ".css": "text/css",
   ".js": "text/javascript",
+  ".html": "text/html; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8",
+  ".webmanifest": "application/manifest+json",
 };
 
 http
