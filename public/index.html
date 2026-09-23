@@ -61,7 +61,9 @@
   nav a:hover{color:var(--cream)} nav a:hover::after{right:0}
 
   /* -------------------------------------------------------------- hero */
-  .hero{position:relative;min-height:100svh;display:grid;grid-template-rows:1fr auto;overflow:hidden;isolation:isolate}
+  /* 100svh : Safari < 15.4 et Firefox < 101 ignorent l'unite et le hero
+     s'effondrerait sans la ligne de repli juste au-dessus */
+  .hero{position:relative;min-height:100vh;min-height:100svh;display:grid;grid-template-rows:1fr auto;overflow:hidden;isolation:isolate}
   .aurora{position:absolute;inset:-20% -10%;z-index:0;pointer-events:none;filter:blur(70px);opacity:.75;
     background:
       radial-gradient(ellipse 34% 40% at 30% 30%, rgba(176,30,40,.55), transparent 70%),
@@ -93,7 +95,7 @@
   .in .lede{opacity:1;transform:none}
   .cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;opacity:0;transform:translateY(16px);transition:opacity 1s var(--ease) .95s,transform 1s var(--ease) .95s}
   .in .cta{opacity:1;transform:none}
-  .btn{display:inline-flex;align-items:center;gap:10px;padding:15px 24px;font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;border:1px solid rgba(184,145,47,.45);color:var(--cream);background:rgba(20,17,15,.55);backdrop-filter:blur(8px);transition:transform .5s var(--ease),border-color .4s,background .4s}
+  .btn{display:inline-flex;align-items:center;gap:10px;padding:15px 24px;font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;border:1px solid rgba(184,145,47,.45);color:var(--cream);background:rgba(20,17,15,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:transform .5s var(--ease),border-color .4s,background .4s}
   .btn:hover{transform:translateY(-2px);border-color:var(--au-hi);background:rgba(20,17,15,.8)}
   .btn.gold{background:linear-gradient(180deg,var(--au-hi),var(--au));color:#0B0A09;border-color:transparent;font-weight:600}
   .btn.gold:hover{background:var(--au-hi)}

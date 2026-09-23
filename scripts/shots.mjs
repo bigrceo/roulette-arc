@@ -13,6 +13,11 @@
 //    paid       un gagnant vient d'etre paye (etat injecte cote fetch)
 //    prelaunch  serveur sans TOKEN_ADDRESS
 //    nowebgl    WebGL indisponible : poster statique
+//    noimportmap  pas de support des import maps (Safari < 16.4) : idem
+//
+//  webkit et firefox ne sont pas installables ici (cdn.playwright.dev et les
+//  miroirs Mozilla sont bloques par la politique de sortie), donc tout est
+//  capture sous Chromium. Voir REPORT.md.
 // ===========================================================================
 
 import fs from "fs";
@@ -43,6 +48,7 @@ const FAKE_PAID = `
 
 async function shoot(browser, url, file, viewport, opts = {}) {
   const { ctx, page, errors } = await newPage(browser, viewport, opts.context);
+  if (opts.route) await opts.route(ctx);
   if (opts.init) await page.addInitScript(opts.init);
   await page.goto(url, { waitUntil: "domcontentloaded" });
   await settle(page);
@@ -90,6 +96,18 @@ async function main() {
       },
     });
   }
+
+  console.log("sans import map (Safari < 16.4) :");
+  await shoot(browser, live, "noimportmap-desktop.png", VIEWPORTS[0], {
+    context: {},
+    route: async (ctx) => {
+      await ctx.route(live + "/", async (route) => {
+        const r = await route.fetch();
+        const body = (await r.text()).replace(/<script type="importmap">[\s\S]*?<\/script>/, "");
+        await route.fulfill({ response: r, body, headers: { ...r.headers(), "content-type": "text/html; charset=utf-8" } });
+      });
+    },
+  });
 
   console.log("locked (on attend que le pot atteigne le seuil) :");
   await waitForState(live, (s) => s.pendingDraw, 180000, "pendingDraw");
