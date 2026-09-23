@@ -38,13 +38,31 @@ async function poster(browser, base) {
   return { file, errors };
 }
 
+// Un PNG 24 bits de 1200x630 avec le grain du site pese ~550 Ko. Les reseaux
+// sociaux n'aiment pas au-dela de ~400 Ko : on repasse en palette 256, ce qui
+// tient largement pour cette image (aplats sombres, or, bordeaux).
+async function shrink(file, maxKo = 400) {
+  const before = fs.statSync(file).size;
+  if (before <= maxKo * 1024) return before;
+  let sharp;
+  try { ({ default: sharp } = await import("sharp")); }
+  catch { console.log(`  ! ${(before / 1024).toFixed(0)} Ko et sharp absent : image laissee telle quelle`); return before; }
+  const buf = await sharp(file).png({ palette: true, colors: 256, dither: 1, compressionLevel: 9, effort: 10 }).toBuffer();
+  if (buf.length < before) fs.writeFileSync(file, buf);
+  return fs.statSync(file).size;
+}
+
 async function og(browser, base) {
   const { ctx, page, errors } = await newPage(browser, { name: "og", width: 1200, height: 630 });
   await page.goto(`${base}/og.html`, { waitUntil: "domcontentloaded" });
   await settle(page, 3500);
+  // une og:image avec la mauvaise police est pire que pas d'image du tout
+  const fonts = await page.evaluate(() => document.fonts.check('400 78px "Bodoni Moda"') && document.fonts.check('400 16px "IBM Plex Mono"'));
+  if (!fonts) throw new Error("les polices Google ne se sont pas chargees : og.png non regenere");
   const file = path.join(PUB, "og.png");
   await page.screenshot({ path: file });
   await ctx.close();
+  await shrink(file);
   return { file, errors };
 }
 
