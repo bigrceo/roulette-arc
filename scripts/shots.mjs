@@ -27,7 +27,7 @@ import {
   startMockCycle, startPrelaunch, stopAll, waitForState,
 } from "./harness.mjs";
 
-const OUT = path.join(ROOT, "shots");
+const OUT = path.join(ROOT, "shots", process.env.SHOTS_BROWSER && process.env.SHOTS_BROWSER !== "chromium" ? process.env.SHOTS_BROWSER : "");
 const PORT_LIVE = 3010;
 const PORT_PRELAUNCH = 3011;
 

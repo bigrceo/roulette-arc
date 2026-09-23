@@ -121,12 +121,21 @@ rimRing.rotation.x = Math.PI / 2; rimRing.position.y = Y_TOP + 0.02; scene.add(r
 const trackRing = new THREE.Mesh(new THREE.TorusGeometry(R_TRACK_IN + 0.02, 0.03, 10, 160), goldDim);
 trackRing.rotation.x = Math.PI / 2; trackRing.position.y = Y_TRACK_IN + 0.01; scene.add(trackRing);
 
-// 8 deflecteurs en losange sur la piste de la bille
+// hauteur de la piste inclinee a un rayon donne (lineaire entre ses deux bords)
+function trackY(r) {
+  const t = Math.max(0, Math.min(1, (r - R_TRACK_IN) / (R_TRACK_OUT - R_TRACK_IN)));
+  return Y_TRACK_IN + t * (Y_TOP - 0.06 - Y_TRACK_IN);
+}
+const BALL_R = 0.17;
+const BALL_TRACK_R = (R_TRACK_OUT + R_TRACK_IN) / 2 + 0.05;
+const BALL_TRACK_Y = trackY(BALL_TRACK_R) + BALL_R * 0.92; // legerement enfonce dans la pente
+
+// 8 deflecteurs en losange, poses sur la piste de la bille
 for (let i = 0; i < 8; i++) {
   const d = new THREE.Mesh(new THREE.OctahedronGeometry(0.11, 0), gold);
   const a = (i / 8) * TAU;
   const r = (R_TRACK_OUT + R_TRACK_IN) / 2;
-  d.position.set(Math.cos(a) * r, Y_TOP - 0.14, Math.sin(a) * r);
+  d.position.set(Math.cos(a) * r, trackY(r) + 0.02, Math.sin(a) * r);
   d.scale.set(1.6, 0.6, 1);
   d.rotation.y = -a;
   d.castShadow = true;
@@ -215,14 +224,19 @@ const turret = lathe([[0.62, 0.8], [0.62, 0.95], [0.42, 1.02], [0.3, 1.2], [0.24
 rotor.add(turret);
 const knob = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 24), gold);
 knob.position.y = 2.36; knob.castShadow = true; rotor.add(knob);
-// poignees en croix
-for (let i = 0; i < 4; i++) {
-  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.5, 16), gold);
-  arm.rotation.z = Math.PI / 2; arm.rotation.y = (i / 4) * TAU; arm.position.y = 1.62;
-  const g = new THREE.Group(); g.add(arm);
-  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 12), gold);
-  tip.position.set(0.78, 1.62, 0); g.add(tip);
-  g.rotation.y = (i / 4) * TAU;
+// poignees en croix : deux bras traversants, un embout a chaque bout.
+// Le bras ne recoit qu'une rotation (couche a plat) ; c'est le groupe qui
+// tourne, sinon les embouts se decollent des bras.
+for (let i = 0; i < 2; i++) {
+  const g = new THREE.Group();
+  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.56, 16), gold);
+  arm.rotation.z = Math.PI / 2; arm.position.y = 1.62; arm.castShadow = true;
+  g.add(arm);
+  for (const sx of [-1, 1]) {
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 12), gold);
+    tip.position.set(sx * 0.78, 1.62, 0); tip.castShadow = true; g.add(tip);
+  }
+  g.rotation.y = (i / 2) * Math.PI;
   rotor.add(g);
 }
 
@@ -276,8 +290,8 @@ let wheelSpeed = SPEED.idle;         // rad/s
 let wheelAngle = 0;
 let ballAngle = 0;
 let ballSpeed = -1.9;                // rad/s, sens inverse
-let ballR = (R_TRACK_OUT + R_TRACK_IN) / 2 + 0.05;
-let ballY = Y_TOP - 0.02;
+let ballR = BALL_TRACK_R;
+let ballY = BALL_TRACK_Y;
 let dropT = 0;                        // progression de la chute (paid)
 let landedOffset = null;              // angle de la case ou la bille est tombee (repere rotor)
 const pocketR = (R_POCKET_OUT + R_POCKET_IN) / 2 + 0.05;
@@ -354,14 +368,14 @@ function step(dt) {
     } else {
       ballAngle = wheelAngle + landedOffset; // solidaire de la roue
     }
-    ballR = THREE.MathUtils.lerp((R_TRACK_OUT + R_TRACK_IN) / 2 + 0.05, pocketR, ease2);
-    ballY = THREE.MathUtils.lerp(Y_TOP - 0.02, Y_POCKET + 0.17, ease2) + Math.sin(t * Math.PI * 3) * (1 - t) * 0.12;
+    ballR = THREE.MathUtils.lerp(BALL_TRACK_R, pocketR, ease2);
+    ballY = THREE.MathUtils.lerp(BALL_TRACK_Y, Y_POCKET + BALL_R, ease2) + Math.sin(t * Math.PI * 3) * (1 - t) * 0.12;
   } else {
     const targetBall = state === "locked" ? -5.2 : -1.9;
     ballSpeed += (targetBall - ballSpeed) * Math.min(1, dt * 0.7);
     ballAngle += ballSpeed * dt;
-    ballR += ((R_TRACK_OUT + R_TRACK_IN) / 2 + 0.05 - ballR) * Math.min(1, dt * 2);
-    ballY += (Y_TOP - 0.02 - ballY) * Math.min(1, dt * 2);
+    ballR += (BALL_TRACK_R - ballR) * Math.min(1, dt * 2);
+    ballY += (BALL_TRACK_Y - ballY) * Math.min(1, dt * 2);
   }
   ball.position.set(Math.cos(ballAngle) * ballR, ballY, -Math.sin(ballAngle) * ballR);
 

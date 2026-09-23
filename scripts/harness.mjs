@@ -83,9 +83,17 @@ export async function waitForState(base, test, timeoutMs, what) {
   }
 }
 
+// SHOTS_BROWSER=chromium (defaut) | webkit | firefox. Les deux derniers ne
+// s'installent pas sur la machine de build cloud, mais tournent en local :
+// `npx playwright install webkit firefox && SHOTS_BROWSER=webkit npm run shots`
+export const BROWSER_NAME = process.env.SHOTS_BROWSER || "chromium";
 export async function launchBrowser() {
+  const { webkit, firefox } = await import("playwright");
+  if (BROWSER_NAME === "webkit") return webkit.launch();
+  if (BROWSER_NAME === "firefox") return firefox.launch();
   return chromium.launch({
-    executablePath: CHROMIUM,
+    // chemin fixe de la machine de build cloud ; en local, Playwright sait ou est le sien
+    ...(fs.existsSync(CHROMIUM) ? { executablePath: CHROMIUM } : {}),
     // swiftshader : pas de GPU sur la machine de build
     args: ["--no-sandbox", "--enable-unsafe-swiftshader", "--use-gl=angle", "--use-angle=swiftshader", "--hide-scrollbars"],
   });
