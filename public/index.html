@@ -70,6 +70,9 @@
   #wheel-3d{position:absolute;inset:0;z-index:1;opacity:0;transition:opacity 1.6s ease .2s}
   #wheel-3d.ready{opacity:1}
   #wheel-3d canvas{display:block;width:100%!important;height:100%!important}
+  /* sans WebGL : poster statique, meme cadre, meme cadrage */
+  #wheel-3d.fallback{opacity:1}
+  #wheel-3d img{display:block;width:100%;height:100%;object-fit:cover;object-position:center top}
   .hero-fade{position:absolute;left:0;right:0;bottom:0;height:64%;z-index:2;pointer-events:none;
     background:linear-gradient(180deg,rgba(11,10,9,0) 0%,rgba(11,10,9,.55) 35%,rgba(11,10,9,.9) 62%,var(--ink) 100%)}
   .hero-copy{position:relative;z-index:3;text-align:center;padding:0 28px 54px;max-width:900px;margin:0 auto}
@@ -323,7 +326,7 @@
   </footer>
 </div>
 
-<script type="module" src="/wheel.js?v=6"></script>
+<script type="module" src="/wheel.js?v=7"></script>
 <script>
 // ===========================================================================
 //  A REMPLIR — le seul endroit a modifier.
