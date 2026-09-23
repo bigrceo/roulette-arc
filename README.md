@@ -160,6 +160,93 @@ THRESHOLD=0.03 GAS_RESERVE=0.005 DRAW_DELAY_BLOCKS=4 TICK_SECONDS=2 npm start
 
 ---
 
+## The site
+
+`public/` is the whole site: one `index.html` (markup, styles and page script
+inline), the roulette wheel, and two generated images. It is served two ways
+from the same folder — by `index.js` on `npm start`, and as a static deploy on
+Vercel with `/api/*` rewritten to the Railway bot. A push on `main` redeploys
+both; there is no manual deploy step.
+
+### The 3D hero
+
+The wheel is real geometry, not a video: bowl, pocket ring, frets, cone,
+turret and ball are built in code with Three.js, lit by one key spotlight and
+two coloured rim lights, and finished with a discreet bloom on the gold. There
+is no downloaded model and no downloaded texture — the wood grain and the
+number ring are drawn into canvases at startup — so nothing here carries a
+licence to cite.
+
+It follows the round: `window.ROULETTE.setState('idle' | 'locked' | 'paid')`.
+Idle the wheel turns slowly and the ball rolls; locked (a draw block is
+announced) it speeds up; paid the ball drops, bounces down the cone and settles
+into a pocket. The page calls it from `/api/state` on every poll.
+
+Two files, on purpose:
+
+| | |
+|---|---|
+| `wheel.js` | the loader. Checks for WebGL, then imports the core dynamically. |
+| `wheel-core.js` | the wheel itself. Free to throw — the loader catches it. |
+
+Anything that stops the wheel — no WebGL, a refused context, an unreachable
+CDN, a browser without import maps — lands on `public/wheel-poster.jpg` in the
+same frame, logged as `console.info`, never as a red error. `window.ROULETTE`
+stays callable as a no-op so the page script does not have to care.
+
+What keeps it cheap: an `IntersectionObserver` on `#wheel-3d` stops the loop
+outright once the hero is off screen (zero frames, draw calls frozen), the tab
+being hidden does the same, and under 700px the bloom pass is dropped — 116
+draw calls per frame instead of 129. `prefers-reduced-motion` renders a single
+still image and never starts the loop.
+
+### Bumping `?v=`
+
+`index.html` loads the hero as `/wheel.js?v=N`, and the loader passes its own
+`?v=` straight to `wheel-core.js`, so one number covers both files. **Raise `N`
+in `index.html` every time you touch either file** — the static server and
+Vercel both serve `public/` assets with `Cache-Control: max-age=3600`, so
+without a bump a visitor keeps the old wheel for an hour. `public/og.html`
+carries its own copy of the same reference; keep the two in step.
+
+### Captures and measurements
+
+Chromium only — `npm install` first, the dev tooling (Playwright, axe-core,
+sharp, and a local copy of three for offline runs) lives in `devDependencies`
+and nothing was added to the runtime, where `ethers` is still the only
+dependency.
+
+```bash
+npm run shots   # shots/ : idle, locked, paid, pre-launch, no-WebGL, no import map
+                #          in 1280x800 and 375x812
+npm run perf    # draw calls per frame, and proof the loop stops off screen
+npm run a11y    # axe-core over the live page and the pre-launch page
+npm run og      # regenerates public/wheel-poster.jpg and public/og.png
+```
+
+`shots/` is gitignored. `npm run shots` boots `mocknode.mjs` and two servers by
+itself, so it needs nothing running beforehand; it lowers the threshold to
+0.05 so the locked state arrives in under a minute.
+
+`npm run og` renders `public/og.html` — a 1200x630 page that is deliberately
+not linked from the navigation and exists only to be photographed. It reuses
+the site's variables, fonts and wheel module, so the share image cannot drift
+away from the site. It refuses to write `og.png` if the Google fonts did not
+load, and re-encodes the result to a 256-colour palette to stay under 400 KB.
+
+### The pinned CDN
+
+Three.js is loaded from jsDelivr through an import map, pinned to
+`three@0.170.0` for both `three` and `three/addons/`. Pinned rather than
+floating on purpose: the addons (`EffectComposer`, `UnrealBloomPass`,
+`OutputPass`, `RoomEnvironment`) track the core's internals and a minor bump
+has broken that pairing before. If you raise the version, raise it in both
+entries of the import map **and** in `public/og.html`, then run `npm run shots`
+and look at the hero before pushing. A CDN that does not answer is not fatal —
+the loader falls back to the poster.
+
+---
+
 ## Posts on X
 
 With `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN` and `X_ACCESS_SECRET` set,
@@ -225,7 +312,8 @@ gambling rules in some jurisdictions. Not legal advice.
 | `test.mjs` | logic tests, no network |
 | `mocknode.mjs` | fake node for local testing |
 | `x.js` | posts on X, OAuth 1.0a without dependencies |
-| `public/` | the site — `wheel.js` is the procedural Three.js roulette wheel in the hero, driven by the round state (idle, locked, paid) |
+| `public/` | the site — see [The site](#the-site). `wheel.js` loads `wheel-core.js`, the procedural Three.js wheel in the hero, driven by the round state (idle, locked, paid) |
+| `scripts/` | captures, performance, accessibility and image generation — dev only, never shipped |
 
 ---
 
