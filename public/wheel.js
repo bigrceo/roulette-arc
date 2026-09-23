@@ -36,6 +36,9 @@ renderer.toneMappingExposure = 1.05;
 renderer.setClearColor(0x000000, 0);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+// le composer enchaine plusieurs passes par image : sans autoReset, les
+// compteurs de renderer.info couvrent l'image entiere et non la derniere passe
+renderer.info.autoReset = false;
 host.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -249,6 +252,17 @@ const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.28, 0.7, 0.86);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
 
+// Le bloom coute cher (5 passes de flou) : sous 700 px on le coupe. Le reste
+// du rendu est identique, seule la halo dore autour de l'or disparait.
+const MOBILE_W = 700;
+function isSmall() { return (window.innerWidth || host.clientWidth) < MOBILE_W; }
+function tuneQuality() {
+  const small = isSmall();
+  bloom.enabled = !small;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, small ? 1.25 : 1.6));
+}
+tuneQuality();
+
 // ---------------------------------------------------------------------------
 // Etat et animation
 // ---------------------------------------------------------------------------
@@ -269,7 +283,12 @@ function setState(s) {
   state = s;
   if (s !== "paid") { dropT = 0; landedOffset = null; }
 }
-window.ROULETTE = { setState, get state() { return state; } };
+window.ROULETTE = {
+  setState,
+  get state() { return state; },
+  // pour les mesures : draw calls du dernier rendu et nombre de frames rendues
+  get info() { return { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, frames, onScreen, bloom: bloom.enabled }; },
+};
 
 const pointer = { x: 0, y: 0 };
 window.addEventListener("pointermove", (e) => {
@@ -280,6 +299,7 @@ window.addEventListener("pointermove", (e) => {
 function resize() {
   const w = host.clientWidth, h = host.clientHeight;
   if (!w || !h) return;
+  tuneQuality();
   renderer.setSize(w, h, false);
   composer.setSize(w, h);
   camera.aspect = w / h;
@@ -294,6 +314,17 @@ resize();
 const clock = new THREE.Clock();
 let visible = true;
 document.addEventListener("visibilitychange", () => { visible = !document.hidden; if (visible) clock.getDelta(); });
+
+// Le hero ne fait qu'un ecran : des qu'on a scrolle plus bas, la boucle
+// s'arrete completement (aucun draw call). On repart avec un delta neuf pour
+// que la roue ne saute pas du temps passe hors ecran.
+let onScreen = true;
+if ("IntersectionObserver" in window) {
+  new IntersectionObserver((entries) => {
+    onScreen = entries[entries.length - 1].isIntersecting;
+    if (onScreen) clock.getDelta();
+  }, { threshold: 0 }).observe(host);
+}
 
 function step(dt) {
   // vitesse cible avec inertie
@@ -339,16 +370,20 @@ function step(dt) {
 // recul de la camera selon le ratio du cadre : plus c'est etroit, plus on recule
 function cameraK() { const w = host.clientWidth, h = host.clientHeight; const a = w / Math.max(1, h); return Math.min(2.6, Math.max(1.5, 1.8 * Math.pow(1.6 / a, 0.35))); }
 
+let frames = 0;
 function frame() {
   requestAnimationFrame(frame);
-  if (!visible) return;
+  if (!visible || !onScreen) return;
+  renderer.info.reset();
   const dt = Math.min(0.05, clock.getDelta());
   step(dt);
   composer.render();
+  frames++;
 }
 
 if (REDUCED) {
   // une seule image, immobile
+  renderer.info.reset();
   step(0.016);
   composer.render();
 } else {

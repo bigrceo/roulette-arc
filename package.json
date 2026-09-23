@@ -9,7 +9,8 @@
     "verify": "node verify.js",
     "test": "node test.mjs",
     "mock": "node mocknode.mjs",
-    "shots": "node scripts/shots.mjs"
+    "shots": "node scripts/shots.mjs",
+    "perf": "node scripts/perf.mjs"
   },
   "dependencies": {
     "ethers": "^6.13.4"
