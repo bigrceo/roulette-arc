@@ -290,6 +290,7 @@ payé) et `rounds-fresh-desktop.png` (le tableau des tirages).
 
 | | |
 |---|---|
+| **Aucune clé dans le dépôt** | `scripts/harness.mjs` tire une paire jetable avec `ethers.Wallet.createRandom()` à chaque exécution et la donne au faux nœud comme au bot (le bot refuse de claim si le destinataire des fees n'est pas son propre wallet, les deux doivent donc partager une adresse). Rien n'est écrit sur disque. La clé de test littérale de `TASKS-ROULETTE.md` n'a été recopiée nulle part. |
 | **Réel, poussé sur `main`** | tout `public/` (`index.html`, `wheel.js`, `wheel-core.js`, `og.html`, `og.png`, `wheel-poster.jpg`), le README, `scripts/`, `package.json`. |
 | **DEMO / local seulement** | les données affichées dans toutes les captures viennent de `mocknode.mjs` : 30 holders tirés au hasard, des fees qui tombent toutes les secondes, une clé de test publique à zéro valeur. Aucun chiffre de ces captures n'est un chiffre réel. |
 | **DEMO** | l'état `paid` des captures est **injecté** côté `fetch` (la méthode documentée dans la spec), pas un vrai tirage : le tour n°9 et son gagnant `0xd743…` sont fabriqués. |

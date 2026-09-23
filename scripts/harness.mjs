@@ -13,15 +13,21 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { chromium } from "playwright";
+import { ethers } from "ethers";
 
 export const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const THREE_DIR = path.join(ROOT, "node_modules", "three");
 export const CDN = "https://cdn.jsdelivr.net/npm/three@0.170.0/";
 export const CHROMIUM = process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium";
 
-export const MOCK_CREATOR = "0xe239cdc5fbe977a8a141B72194D3CF8c41bC5BC6";
-// cle de test publique, zero valeur, n'existe que pour mocknode.mjs
-export const TEST_KEY = "0xabababababababababababababababababababababababababababababababab";
+// Le bot refuse de claim si le destinataire des fees n'est pas son propre
+// wallet : le faux noeud et le bot doivent donc partager une adresse. On tire
+// une paire jetable a chaque execution plutot que d'ecrire une cle dans le
+// depot — elle ne sort jamais de la memoire du processus et ne touche que
+// mocknode.mjs.
+const THROWAWAY = ethers.Wallet.createRandom();
+export const MOCK_CREATOR = THROWAWAY.address;
+export const TEST_KEY = THROWAWAY.privateKey;
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
