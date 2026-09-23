@@ -11,7 +11,8 @@
     "mock": "node mocknode.mjs",
     "shots": "node scripts/shots.mjs",
     "perf": "node scripts/perf.mjs",
-    "og": "node scripts/og.mjs"
+    "og": "node scripts/og.mjs",
+    "a11y": "node scripts/a11y.mjs"
   },
   "dependencies": {
     "ethers": "^6.13.4"
