@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0B0A09">
-<title>$ROULETTE — the wheel pays one holder</title>
-<meta name="description" content="Every trade feeds the pot. When it fills, one holder takes all of it — drawn from a block hash that does not exist yet.">
-<meta property="og:title" content="$ROULETTE — the wheel pays one holder">
+<title>$ROULETTE. The wheel pays one holder</title>
+<meta name="description" content="Every trade feeds the pot. When it fills, one holder takes all of it, drawn from a block hash that does not exist yet.">
+<meta property="og:title" content="$ROULETTE. The wheel pays one holder">
 <meta property="og:description" content="Every trade feeds the pot. One holder takes the whole pot.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://rouletteonchain.world/og.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="$ROULETTE — the wheel pays one holder">
+<meta name="twitter:title" content="$ROULETTE. The wheel pays one holder">
 <meta name="twitter:description" content="Every trade feeds the pot. One holder takes the whole pot.">
 <meta name="twitter:image" content="https://rouletteonchain.world/og.png">
 <link rel="icon" href="/logo.png">
@@ -113,6 +113,9 @@
     text-align:center}
   .table::before{content:"";position:absolute;inset:8px;border:1px solid rgba(184,145,47,.14);pointer-events:none}
   .felt-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.32em;text-transform:uppercase;color:var(--au)}
+  .demo-tag{display:none;font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--cream-faint);margin-top:6px}
+  .demo .demo-tag{display:block}
+  .demo .stat-l::after{content:" · sim";color:var(--cream-faint)}
   .pot{font-family:var(--mono);font-weight:500;font-size:clamp(44px,9vw,84px);letter-spacing:-.04em;margin:12px 0 2px;color:var(--cream);font-variant-numeric:tabular-nums;line-height:1.05}
   .pot small{font-size:.38em;letter-spacing:.08em;color:var(--au-hi);margin-left:.25em;vertical-align:baseline}
   .pot-note{color:var(--cream-dim);font-size:13.5px;min-height:1.6em}
@@ -133,8 +136,7 @@
 
   /* ----------------------------------------------------------- sections */
   section{padding:84px 0}
-  .pill{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--au);border:1px solid rgba(184,145,47,.3);padding:8px 14px;margin:0 0 34px;border-radius:999px;background:rgba(184,145,47,.05)}
-  .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--au);box-shadow:0 0 10px var(--au-hi)}
+  h2{font-family:var(--mono);font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--au);font-weight:500;margin:0 0 34px;padding-bottom:12px;border-bottom:1px solid rgba(184,145,47,.18)}
   .steps{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
   .step{padding:28px 26px;border:1px solid var(--ink-3);background:linear-gradient(180deg,rgba(30,25,21,.6),rgba(20,17,15,.4));position:relative;overflow:hidden;transition:transform .6s var(--ease),border-color .5s}
   .step::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(232,204,120,.09),transparent 45%);opacity:0;transition:opacity .5s}
@@ -252,7 +254,7 @@
   <div class="hero-copy">
     <div class="eyebrow">No stake <span>·</span> No claim <span>·</span> One winner</div>
     <h1 id="h1">The wheel pays <em><span class="swap" id="swap" aria-live="off" aria-hidden="true"><span class="on">one holder.</span><span>one address.</span><span>one wallet.</span></span><span class="sr-only">one holder.</span></em></h1>
-    <p class="lede">Every trade feeds the pot. When it fills, the whole thing goes to a single holder — picked by a block hash that has not been mined yet.</p>
+    <p class="lede">Every trade feeds the pot. When it fills, the whole thing goes to a single holder, picked by a block hash that has not been mined yet.</p>
     <div class="cta">
       <a class="btn gold" id="buy-top" href="#table">See the pot <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></a>
       <a class="btn" href="#rules">How the wheel works</a>
@@ -264,32 +266,33 @@
 <div class="wrap">
   <div class="table" id="table">
     <div class="felt-label">Pot on the table</div>
-    <div class="pot" id="pot">—</div>
+    <div class="demo-tag" id="demo-tag">Simulation until launch · not on-chain</div>
+    <div class="pot" id="pot">·</div>
     <div class="pot-note" id="pot-note">waiting for one address</div>
     <div class="track" id="track" role="progressbar" aria-label="Pot progress" aria-valuemin="0" aria-valuenow="0" aria-valuemax="100"><div id="bar"></div></div>
-    <div class="track-legend"><span id="pct">—</span><span id="thr">—</span></div>
+    <div class="track-legend"><span id="pct">·</span><span id="thr">·</span></div>
     <div class="spinning" id="spinning"></div>
     <a class="buy" id="buy" href="#" target="_blank" rel="noopener">Buy $ROULETTE on Pons</a>
   </div>
 
   <div class="stats">
-    <div class="stat rv"><div class="stat-v" id="paid">—</div><div class="stat-l">Paid out</div></div>
-    <div class="stat rv d1"><div class="stat-v" id="rounds">—</div><div class="stat-l">Spins</div></div>
-    <div class="stat rv d2"><div class="stat-v" id="eligible">—</div><div class="stat-l">In the game</div></div>
+    <div class="stat rv"><div class="stat-v" id="paid">·</div><div class="stat-l">Paid out</div></div>
+    <div class="stat rv d1"><div class="stat-v" id="rounds">·</div><div class="stat-l">Spins</div></div>
+    <div class="stat rv d2"><div class="stat-v" id="eligible">·</div><div class="stat-l">In the game</div></div>
   </div>
 
   <section id="rules">
-    <div class="pill rv">The house rules</div>
+    <h2 class="rv">The house rules</h2>
     <div class="steps">
       <div class="step rv"><div class="step-n">I</div>
         <h3>Every trade pays a fee</h3>
-        <p>It lands in the launch's fee contract on Pons. The launchpad takes its share first — what reaches this project is what is left after that.</p></div>
+        <p>It lands in the launch's fee contract on Pons. The launchpad takes its share first. What reaches this project is what is left after that.</p></div>
       <div class="step rv d1"><div class="step-n">II</div>
         <h3><span id="s-pot">70</span>% of what arrives goes on the table</h3>
-        <p>The other <span id="s-dev">30</span>% funds the project. Written here rather than buried — you should know who takes what before you buy.</p></div>
+        <p>The other <span id="s-dev">30</span>% funds the project. Written here rather than buried. You should know who takes what before you buy.</p></div>
       <div class="step rv d2"><div class="step-n">III</div>
         <h3>At the line, the wheel locks</h3>
-        <p>A draw block is announced. It has not been mined yet, so its hash cannot be predicted — not by you, not by us.</p></div>
+        <p>A draw block is announced. It has not been mined yet, so its hash cannot be predicted. Not by you, not by us.</p></div>
       <div class="step rv d3"><div class="step-n">IV</div>
         <h3>One address takes the pot</h3>
         <p>Odds follow the square root of your balance. Holding more helps; doubling your bag multiplies your odds by 1.41, not by 2. No single whale owns the wheel.</p></div>
@@ -299,27 +302,27 @@
   <div class="rule"></div>
 
   <section>
-    <div class="pill rv">Why you don't have to trust us</div>
+    <h2 class="rv">Why you don't have to trust us</h2>
     <div class="prose">
       <p data-words>The winner falls out of two public inputs: token balances frozen at the draw block, and the hash of that same block. Both live on Robinhood Chain. Neither can be touched once the block is announced.</p>
-      <p class="muted rv">Every spin below shows its draw block, the hash it produced and the payout transaction. The verification script is open source and imports the exact same module as the bot — point it at any round and you should land on the same address.<span id="verify-link"></span></p>
+      <p class="muted rv">Every spin below shows its draw block, the hash it produced and the payout transaction. The verification script is open source and imports the exact same module as the bot. Point it at any round and you should land on the same address.<span id="verify-link"></span></p>
     </div>
   </section>
 
   <div class="rule"></div>
 
   <section>
-    <div class="pill rv">Past spins</div>
+    <h2 class="rv">Past spins</h2>
     <div id="rounds-box" class="rv d1"><div class="empty">The wheel has not turned yet.</div></div>
   </section>
 
   <div class="rule"></div>
 
   <section>
-    <div class="pill rv">Contract</div>
+    <h2 class="rv">Contract</h2>
     <div class="ca rv d1">
       <div class="ca-lead">The one official address:</div>
-      <div class="ca-addr"><span id="ca">—</span><button id="copy" type="button" hidden>Copy</button></div>
+      <div class="ca-addr"><span id="ca">·</span><button id="copy" type="button" hidden>Copy</button></div>
       <div class="ca-warn">Read every character before you buy. Copies of new tokens circulate within minutes of a launch.</div>
     </div>
   </section>
@@ -354,7 +357,7 @@ const LINKS = {
 // ===========================================================================
 
 const $ = id => document.getElementById(id);
-const short = a => a ? a.slice(0,6)+'…'+a.slice(-4) : '—';
+const short = a => a ? a.slice(0,6)+'…'+a.slice(-4) : '·';
 const num = (n, sym) => Number(n).toLocaleString('en-US',{minimumFractionDigits:4,maximumFractionDigits:4}) + (sym ? ' ' + sym : '');
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -477,6 +480,7 @@ async function load(){
   let s;
   try { s = await (await fetch('/api/state')).json(); } catch(e){ return; }
   const sym = s.symbol || '';
+  document.body.classList.toggle('demo', !!s.demo);
   const st = roundState(s);
   if (window.ROULETTE) window.ROULETTE.setState(st);
 
@@ -487,7 +491,7 @@ async function load(){
     $('pot').textContent = 'SOON';
     $('pot-note').textContent = 'the wheel is not spinning yet';
     setBar(0, 'Opens at launch', 'spins at ' + num(s.threshold, sym));
-    $('paid').textContent = '—'; $('rounds').textContent = '—'; $('eligible').textContent = '—';
+    $('paid').textContent = '·'; $('rounds').textContent = '·'; $('eligible').textContent = '·';
     $('ca').textContent = 'Published at launch';
     $('spinning').style.display = 'none';
     return;
@@ -517,14 +521,14 @@ async function load(){
   countTo('paid', s.totalPaid, v => num(v, sym));
   countTo('rounds', s.rounds.length, v => String(Math.round(v)));
   countTo('eligible', s.eligibleCount, v => String(Math.round(v)));
-  $('ca').textContent = s.token;
-  $('copy').hidden = false;
+  $('ca').textContent = s.demo ? 'Published at launch' : s.token;
+  $('copy').hidden = !!s.demo;
 
   const d = $('spinning');
   if (s.pendingDraw){
     d.style.display = 'block';
     d.innerHTML = 'Spin <b>#'+esc(s.pendingDraw.round)+'</b> is locked. The winner comes from block <b>'
-      + esc(s.pendingDraw.targetBlock) + '</b> — not mined yet.';
+      + esc(s.pendingDraw.targetBlock) + '</b>, not mined yet.';
   } else d.style.display = 'none';
 
   if (s.rounds.length){
@@ -536,10 +540,10 @@ async function load(){
       '<table><thead><tr><th>#</th><th>Winner</th><th>Pot</th><th>Draw block</th><th>Payout</th></tr></thead><tbody>'
       + s.rounds.map(r => '<tr' + (fresh(r) ? ' class="fresh"' : '') + '>'
         + '<td class="num">'+esc(r.round)+'</td>'
-        + '<td><a href="'+esc(s.explorer)+'/address/'+esc(r.winner)+'" target="_blank" rel="noopener">'+esc(short(r.winner))+'</a></td>'
+        + '<td>'+(r.simulated ? esc(short(r.winner)) : '<a href="'+esc(s.explorer)+'/address/'+esc(r.winner)+'" target="_blank" rel="noopener">'+esc(short(r.winner))+'</a>')+'</td>'
         + '<td class="amount">'+num(r.amount, sym)+'</td>'
         + '<td>'+esc(r.targetBlock)+'</td>'
-        + '<td>'+(r.txHash
+        + '<td>'+(r.simulated ? '<span class="muted">simulated</span>' : r.txHash
             ? '<a href="'+esc(s.explorer)+'/tx/'+esc(r.txHash)+'" target="_blank" rel="noopener">'+esc(short(r.txHash))+'</a>'
             : '<span class="failed">failed</span>')+'</td>'
         + '</tr>').join('')

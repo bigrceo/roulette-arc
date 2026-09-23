@@ -407,7 +407,62 @@ async function tick() {
 // ---------------------------------------------------------------------------
 // SERVEUR WEB
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// DEMO_MODE=true : avant le lancement, le site montre des chiffres simules,
+// etiquetes "simulation" cote client (champ `demo`). Deterministe a partir de
+// l'horloge : le pot monte, un tirage tombe toutes les ~40 minutes, les
+// "rounds" n'ont ni tx ni adresse reelle. Aucun lien vers l'explorer.
+// ---------------------------------------------------------------------------
+const DEMO = /^(1|true|yes)$/i.test(process.env.DEMO_MODE || "");
+function demoState() {
+  const thr = amt(THRESHOLD);
+  const CYCLE = 40 * 60 * 1000;
+  const t = Date.now();
+  const cycle = Math.floor(t / CYCLE);
+  const phase = (t % CYCLE) / CYCLE; // 0..1 dans le cycle courant
+  const pot = Number((thr * Math.min(1, phase * 1.08)).toFixed(4));
+  const locked = phase > 0.93;
+  const seed = (n) => { let x = Math.sin(n * 9301 + 49297) * 233280; return x - Math.floor(x); };
+  const fakeAddr = (n) => "0x" + Array.from({ length: 40 }, (_, i) => "0123456789abcdef"[Math.floor(seed(n * 40 + i) * 16)]).join("");
+  const rounds = [];
+  for (let k = 1; k <= 6; k++) {
+    const c = cycle - k;
+    if (c < 0) break;
+    rounds.push({
+      round: c % 1000,
+      at: new Date((c + 1) * CYCLE).toISOString(),
+      targetBlock: 69900000 + (c % 1000) * 24000,
+      blockHash: null,
+      winner: fakeAddr(c),
+      winnerWeightPct: Number((3 + seed(c) * 9).toFixed(2)),
+      amount: Number((thr * (0.98 + seed(c + 7) * 0.1)).toFixed(4)),
+      eligibleCount: 24 + Math.floor(seed(c + 3) * 30),
+      txHash: null,
+      simulated: true,
+    });
+  }
+  return {
+    prelaunch: false,
+    demo: true,
+    pot,
+    pending: Number((thr * 0.04 * seed(cycle + 11)).toFixed(4)),
+    threshold: thr,
+    potShare: POT_SHARE,
+    devShare: 100 - POT_SHARE,
+    eligibleCount: 24 + Math.floor(seed(cycle + 5) * 30),
+    totalPaid: Number(rounds.reduce((s, r) => s + r.amount, 0).toFixed(4)),
+    pendingDraw: locked ? { round: cycle % 1000, targetBlock: 69900000 + (cycle % 1000) * 24000, pot: String(pot), announcedAt: new Date().toISOString() } : null,
+    lastBlock: 69900000 + (cycle % 1000) * 24000 - 1800,
+    rounds,
+    token: "",
+    symbol: PONS.feeAsset ? "" : CHAIN.nativeSymbol,
+    explorer: CHAIN.explorer,
+    rules: { minHoldPct: 0.1, weighting: "sqrt", drawDelayBlocks: DRAW_DELAY },
+  };
+}
+
 function publicState() {
+  if (!TOKEN && DEMO) return demoState();
   if (!TOKEN) {
     return {
       prelaunch: true,
