@@ -153,6 +153,10 @@
   .amount{color:var(--au-hi);font-weight:600}
   .failed{color:var(--blood)}
   .empty{color:var(--cream-faint);font-size:14.5px;padding:8px 0 4px}
+  /* le tableau est reconstruit a chaque sondage : seules les lignes dont le
+     numero de tour n'etait pas la avant portent .fresh */
+  @keyframes row-in{from{opacity:0;transform:translateY(14px);filter:blur(4px)}to{opacity:1;transform:none;filter:blur(0)}}
+  tbody tr.fresh{animation:row-in .8s var(--ease) both}
 
   .ca{border:1px solid var(--ink-3);padding:26px;background:var(--ink-2)}
   .ca-lead{font-size:13.5px;color:var(--cream-dim)}
@@ -186,6 +190,11 @@
     .brand-sub{display:none}
     .eyebrow{letter-spacing:.2em;font-size:10px}
   }
+  /* a 375 px la ligne remplissait la largeur au pixel pres : une police de
+     repli ou une langue plus large la cassait en deux */
+  @media(max-width:420px){
+    .eyebrow{font-size:9.5px;letter-spacing:.15em;white-space:nowrap}
+  }
   @media(max-width:560px){
     .stats{grid-template-columns:1fr}
     .stat{border-right:0;border-bottom:1px solid var(--ink-3)}
@@ -193,7 +202,7 @@
     .track-legend{font-size:10px}
   }
   @media(prefers-reduced-motion:reduce){
-    .aurora,.marquee-track,.scroll-hint{animation:none}
+    .aurora,.marquee-track,.scroll-hint,tbody tr.fresh{animation:none}
     h1 .w>span,.lede,.cta,.rv{opacity:1;transform:none;filter:none;animation:none;transition:none}
     .swap>span{transition:none}
     html{scroll-behavior:auto}
@@ -247,7 +256,7 @@
       <a class="btn" href="#rules">How the wheel works</a>
     </div>
   </div>
-  <div class="scroll-hint">scroll</div>
+  <div class="scroll-hint" id="scroll-hint">scroll</div>
 </div>
 
 <div class="wrap">
@@ -380,6 +389,16 @@ const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion:
   setInterval(() => { items[k].classList.remove('on'); k = (k + 1) % items.length; items[k].classList.add('on'); }, 3200);
 })();
 
+// "SCROLL" n'a pas de sens sur un hero court (paysage mobile, petite
+// fenetre) : il chevauche les boutons au lieu d'inviter a descendre.
+(function scrollHint(){
+  const hero = $('hero'), hint = $('scroll-hint');
+  const fit = () => { hint.hidden = hero.getBoundingClientRect().height < 640; };
+  fit();
+  addEventListener('resize', fit);
+  addEventListener('orientationchange', fit);
+})();
+
 // apparition au scroll
 const io = new IntersectionObserver((es) => es.forEach(e => { if (e.isIntersecting){ e.target.classList.add('on'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -10% 0px', threshold: 0.12 });
 document.querySelectorAll('.rv').forEach(el => io.observe(el));
@@ -436,6 +455,7 @@ function renderLinks(){
 // ---------------------------------------------------------------- etat
 // La roue 3D suit l'etat du round : en attente, bloc annonce, gagnant paye.
 const PAID_WINDOW_MS = 10 * 60 * 1000;
+let seenRounds = null;   // null tant que le tableau n'a jamais ete rendu
 function roundState(s){
   if (s.prelaunch) return 'idle';
   if (s.pendingDraw) return 'locked';
@@ -481,8 +501,13 @@ async function load(){
   if (st === 'locked'){
     setBar(100, 'Wheel locked &middot; draw block #' + esc(s.pendingDraw.targetBlock), potLine);
   } else if (st === 'paid'){
+    // Le pot vient de partir : la jauge repart du pot courant. Elle ne peut
+    // pas etre pleine — une barre pleine veut dire "la roue se verrouille",
+    // et c'est l'etat locked, pas celui-ci. Sans ce plafond, un pot deja
+    // revenu au-dessus du seuil laissait la barre du tour precedent intacte.
     const r = s.rounds[0];
-    setBar(pct, 'Paid to <a href="' + esc(s.explorer) + '/tx/' + esc(r.txHash) + '" target="_blank" rel="noopener">' + esc(short(r.winner)) + '</a>', pct.toFixed(0) + '%');
+    const p = Math.min(99, pct);
+    setBar(p, 'Paid to <a href="' + esc(s.explorer) + '/tx/' + esc(r.txHash) + '" target="_blank" rel="noopener">' + esc(short(r.winner)) + '</a>', potLine);
   } else {
     setBar(pct, potLine, pct.toFixed(0) + '%');
   }
@@ -501,9 +526,13 @@ async function load(){
   } else d.style.display = 'none';
 
   if (s.rounds.length){
+    // premier rendu : pas d'animation ligne a ligne, le bloc entier apparait deja
+    const before = seenRounds;
+    const fresh = (r) => before != null && !before.has(r.round);
+    seenRounds = new Set(s.rounds.map(r => r.round));
     $('rounds-box').innerHTML =
       '<table><thead><tr><th>#</th><th>Winner</th><th>Pot</th><th>Draw block</th><th>Payout</th></tr></thead><tbody>'
-      + s.rounds.map(r => '<tr>'
+      + s.rounds.map(r => '<tr' + (fresh(r) ? ' class="fresh"' : '') + '>'
         + '<td class="num">'+esc(r.round)+'</td>'
         + '<td><a href="'+esc(s.explorer)+'/address/'+esc(r.winner)+'" target="_blank" rel="noopener">'+esc(short(r.winner))+'</a></td>'
         + '<td class="amount">'+num(r.amount, sym)+'</td>'
